@@ -142,19 +142,15 @@ export function CercaScreen({ collezione, onAggiungi }: {
   }
 
   async function confermaAggiungi() {
-    if (!cartaSelezionata) return
-    const prezzo = parseFloat(prezzoAcquisto.replace(',', '.'))
+  if (!cartaSelezionata) return
+  console.log('grade selezionato:', gradeSelezionato.label)
+  console.log('carte in collezione:', collezione.map(c => ({ cardId: c.cardId, grade: c.grade })))
+  const prezzo = parseFloat(prezzoAcquisto.replace(',', '.'))
     if (isNaN(prezzo) || prezzo <= 0) {
       Alert.alert('Prezzo non valido', 'Inserisci un prezzo di acquisto valido.')
       return
     }
-    const duplicato = collezione.find(c =>
-      c.cardId === cartaSelezionata.cardId && c.grade === gradeSelezionato.label
-    )
-    if (duplicato) {
-      Alert.alert('Già presente', `Hai già questa carta in ${gradeSelezionato.label} nella tua collezione.`)
-      return
-    }
+  
     setAggiungendo(true)
     await onAggiungi(cartaSelezionata, prezzo, gradeSelezionato.condition, gradeSelezionato.company, gradeSelezionato.value)
     setAggiungendo(false)
