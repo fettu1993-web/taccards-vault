@@ -135,10 +135,6 @@ export function CercaScreen({ collezione, onAggiungi }: {
   }
 
   function apriModal(carta: Carta) {
-    if (collezione.find(c => c.cardId === carta.cardId)) {
-      Alert.alert('Già presente', 'Questa carta è già nella tua collezione.')
-      return
-    }
     setCartaSelezionata(carta)
     setPrezzoAcquisto('')
     setGradeSelezionato(DEFAULT_GRADE)
@@ -150,6 +146,13 @@ export function CercaScreen({ collezione, onAggiungi }: {
     const prezzo = parseFloat(prezzoAcquisto.replace(',', '.'))
     if (isNaN(prezzo) || prezzo <= 0) {
       Alert.alert('Prezzo non valido', 'Inserisci un prezzo di acquisto valido.')
+      return
+    }
+    const duplicato = collezione.find(c =>
+      c.cardId === cartaSelezionata.cardId && c.grade === gradeSelezionato.label
+    )
+    if (duplicato) {
+      Alert.alert('Già presente', `Hai già questa carta in ${gradeSelezionato.label} nella tua collezione.`)
       return
     }
     setAggiungendo(true)
@@ -184,40 +187,30 @@ export function CercaScreen({ collezione, onAggiungi }: {
         <Text style={styles.emptyText}>Nessuna carta trovata</Text>
       )}
 
-      {!cercando && risultati.map((card) => {
-        const inCollezione = !!collezione.find(c => c.cardId === card.cardId)
-        return (
-          <View key={card.id} style={styles.cardItem}>
-            {card.imageUrl ? (
-              <Image
-                source={{ uri: card.imageUrl }}
-                style={styles.cardImage}
-                resizeMode="contain"
-              />
-            ) : (
-              <View style={styles.cardIcon}>
-                <Text style={styles.cardIconText}>{card.sport}</Text>
-              </View>
-            )}
-            <View style={styles.cardInfo}>
-              <Text style={styles.cardPlayer}>{card.player}</Text>
-              <Text style={styles.cardSet}>{card.set}</Text>
-              {card.grade ? <Text style={styles.cardGrade}>{card.grade}</Text> : null}
+      {!cercando && risultati.map((card) => (
+        <View key={card.id} style={styles.cardItem}>
+          {card.imageUrl ? (
+            <Image source={{ uri: card.imageUrl }} style={styles.cardImage} resizeMode="contain" />
+          ) : (
+            <View style={styles.cardIcon}>
+              <Text style={styles.cardIconText}>{card.sport}</Text>
             </View>
-            <View style={styles.cardPrices}>
-              <Text style={styles.cardCurrentPrice}>€{card.currentPrice}</Text>
-              <TouchableOpacity
-                style={[styles.addBtn, inCollezione && styles.addBtnDone]}
-                onPress={() => apriModal(card)}
-                disabled={inCollezione}>
-                <Text style={[styles.addBtnText, inCollezione && styles.addBtnTextDone]}>
-                  {inCollezione ? '✓ Aggiunta' : '+ Aggiungi'}
-                </Text>
-              </TouchableOpacity>
-            </View>
+          )}
+          <View style={styles.cardInfo}>
+            <Text style={styles.cardPlayer}>{card.player}</Text>
+            <Text style={styles.cardSet}>{card.set}</Text>
+            {card.grade ? <Text style={styles.cardGrade}>{card.grade}</Text> : null}
           </View>
-        )
-      })}
+          <View style={styles.cardPrices}>
+            <Text style={styles.cardCurrentPrice}>€{card.currentPrice}</Text>
+            <TouchableOpacity
+              style={styles.addBtn}
+              onPress={() => apriModal(card)}>
+              <Text style={styles.addBtnText}>+ Aggiungi</Text>
+            </TouchableOpacity>
+          </View>
+        </View>
+      ))}
 
       <Modal visible={modalVisible} transparent animationType="fade">
         <View style={styles.modalOverlay}>
@@ -298,9 +291,7 @@ const styles = StyleSheet.create({
   cardPrices: { alignItems: 'flex-end' },
   cardCurrentPrice: { fontSize: 16, fontWeight: '500', color: '#2C2C2A' },
   addBtn: { backgroundColor: '#EEEDFE', borderRadius: 6, paddingHorizontal: 8, paddingVertical: 4, marginTop: 4 },
-  addBtnDone: { backgroundColor: '#EAF3DE' },
   addBtnText: { color: '#534AB7', fontSize: 11, fontWeight: '500' },
-  addBtnTextDone: { color: '#3B6D11' },
   modalOverlay: { flex: 1, backgroundColor: 'rgba(0,0,0,0.5)', alignItems: 'center', justifyContent: 'center', padding: 24 },
   modalBox: { backgroundColor: '#fff', borderRadius: 16, padding: 24, width: '100%', maxWidth: 400 },
   modalTitle: { fontSize: 18, fontWeight: '500', color: '#2C2C2A', marginBottom: 16 },

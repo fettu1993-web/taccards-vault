@@ -94,19 +94,18 @@ export function CartaDetailScreen({ carta, onBack, onRimuovi }: {
       </View>
 
       {/* Pulsante rimuovi */}
-      {onRimuovi && (
-        <TouchableOpacity
-          style={styles.removeBtn}
-          onPress={() =>
-            Alert.alert('Rimuovi carta', `Rimuovere ${carta.player} dalla collezione?`, [
-              { text: 'Annulla', style: 'cancel' },
-              { text: 'Rimuovi', style: 'destructive', onPress: () => onRimuovi(carta.id) },
-            ])
-          }
-        >
-          <Text style={styles.removeBtnText}>🗑 Rimuovi dalla collezione</Text>
-        </TouchableOpacity>
-      )}
+{onRimuovi && (
+  <TouchableOpacity
+    style={styles.removeBtn}
+    onPress={() => {
+      if (window.confirm(`Rimuovere ${carta.player} dalla collezione?`)) {
+        onRimuovi(carta.id)
+      }
+    }}
+  >
+    <Text style={styles.removeBtnText}>🗑 Rimuovi dalla collezione</Text>
+  </TouchableOpacity>
+)}
     </ScrollView>
   )
 }
