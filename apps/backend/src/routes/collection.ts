@@ -6,7 +6,7 @@ import { Prisma } from '@prisma/client'
 
 const addCardSchema = z.object({
   cardId: z.string().uuid(),
-  condition: z.enum(['raw', 'psa', 'bgs', 'sgc', 'cgc', 'tag']).default('raw'),
+  condition: z.enum(['raw', 'graded', 'psa', 'bgs', 'sgc', 'cgc', 'tag', 'graad']).default('raw'),
   gradeCompany: z.string().optional(),
   gradeValue: z.string().optional(),
   certNumber: z.string().optional(),
