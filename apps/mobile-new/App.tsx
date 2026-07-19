@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react'
-import { View, Text, ActivityIndicator } from 'react-native'
+import { View, Text, ActivityIndicator, Alert } from 'react-native'
 import { supabase } from './src/lib/supabase'
 import { apiFetch } from './src/lib/api'
 import { Carta, mapUserCard } from './src/types'
@@ -8,8 +8,9 @@ import { LoginScreen } from './src/screens/LoginScreen'
 import { CollezioneScreen } from './src/screens/CollezioneScreen'
 import { CercaScreen } from './src/screens/CercaScreen'
 import { ScannerScreen } from './src/screens/ScannerScreen'
+import { SealedProductsScreen } from './src/screens/SealedProductsScreen'
 import { ProfiloScreen } from './src/screens/ProfiloScreen'
-import { Alert } from 'react-native'
+import { CartaDetailScreen } from './src/screens/CartaDetailScreen'
 
 export default function App() {
   const [session, setSession] = useState<any>(null)
@@ -17,6 +18,7 @@ export default function App() {
   const [activeTab, setActiveTab] = useState('collezione')
   const [collezione, setCollezione] = useState<Carta[]>([])
   const [loadingCollection, setLoadingCollection] = useState(false)
+  const [cartaDettaglio, setCartaDettaglio] = useState<Carta | null>(null)
 
   const user = session?.user
   const token = session?.access_token
@@ -64,18 +66,25 @@ export default function App() {
     setCollezione([])
   }
 
- async function handleAggiungi(carta: Carta, purchasePrice: number) {
-  try {
-    await apiFetch('/collection', {
-      method: 'POST',
-      body: JSON.stringify({ cardId: carta.cardId, condition: 'raw', purchasePrice }),
-    })
-    await fetchCollection()
-    Alert.alert('✅ Aggiunta!', `${carta.player} è stata aggiunta alla tua collezione.`)
-  } catch (e: any) {
-    Alert.alert('Errore', e.message || 'Non è stato possibile aggiungere la carta.')
+  async function handleAggiungi(
+    carta: Carta,
+    purchasePrice: number,
+    condition: string,
+    gradeCompany: string | null,
+    gradeValue: string | null
+  ) {
+    try {
+      await apiFetch('/collection', {
+        method: 'POST',
+        body: JSON.stringify({ cardId: carta.cardId, condition, gradeCompany, gradeValue, purchasePrice }),
+      })
+      await fetchCollection()
+      Alert.alert('✅ Aggiunta!', `${carta.player} è stata aggiunta alla tua collezione.`)
+    } catch (e: any) {
+      Alert.alert('Errore', e.message || 'Non è stato possibile aggiungere la carta.')
+    }
   }
-}
+
   async function handleRimuovi(id: string) {
     try {
       await apiFetch(`/collection/${id}`, { method: 'DELETE' })
@@ -85,12 +94,43 @@ export default function App() {
     }
   }
 
+  // Se stiamo vedendo il dettaglio di una carta, mostra solo quello (niente tab bar)
+  if (cartaDettaglio) {
+    return (
+      <View style={{ flex: 1, backgroundColor: '#F1EFE8' }}>
+        <CartaDetailScreen
+          carta={cartaDettaglio}
+          onBack={() => setCartaDettaglio(null)}
+          onRimuovi={(id) => {
+            handleRimuovi(id)
+            setCartaDettaglio(null)
+          }}
+        />
+      </View>
+    )
+  }
+
   return (
     <View style={{ flex: 1, backgroundColor: '#F1EFE8' }}>
-      {activeTab === 'collezione' && <CollezioneScreen carte={collezione} onRimuovi={handleRimuovi} loading={loadingCollection} />}
-      {activeTab === 'cerca' && <CercaScreen collezione={collezione} onAggiungi={handleAggiungi} />}
+      {activeTab === 'collezione' && (
+        <CollezioneScreen
+          carte={collezione}
+          onRimuovi={handleRimuovi}
+          loading={loadingCollection}
+          onCartaPress={setCartaDettaglio}
+        />
+      )}
+      {activeTab === 'cerca' && (
+        <CercaScreen
+          collezione={collezione}
+          onAggiungi={handleAggiungi}
+        />
+      )}
       {activeTab === 'scanner' && <ScannerScreen />}
-      {activeTab === 'profilo' && <ProfiloScreen user={user} onLogout={handleLogout} carte={collezione} />}
+      {activeTab === 'sealed' && <SealedProductsScreen />}
+      {activeTab === 'profilo' && (
+        <ProfiloScreen user={user} onLogout={handleLogout} carte={collezione} />
+      )}
       <TabBar active={activeTab} onPress={setActiveTab} />
     </View>
   )

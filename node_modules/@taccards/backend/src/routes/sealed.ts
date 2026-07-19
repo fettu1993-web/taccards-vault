@@ -69,6 +69,23 @@ export async function sealedRoutes(app: FastifyInstance) {
 
     return reply.status(201).send(product)
   })
+// PATCH /api/v1/sealed/:id — aggiorna status o currentValue
+  app.patch('/:id', { preHandler: authenticate }, async (req, reply) => {
+    const user = (req as any).user
+    const { id } = req.params as { id: string }
+
+    const existing = await prisma.sealedProduct.findFirst({
+      where: { id, userId: user.id },
+    })
+    if (!existing) return reply.status(404).send({ error: 'Prodotto non trovato' })
+
+    const updated = await prisma.sealedProduct.update({
+      where: { id },
+      data: req.body as any,
+    })
+
+    return reply.send(updated)
+  })
 
   // DELETE /api/v1/sealed/:id
   app.delete('/:id', { preHandler: authenticate }, async (req, reply) => {

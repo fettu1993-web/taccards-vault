@@ -4,10 +4,11 @@ import { Carta } from '../types'
 import { CardItem } from '../components/CardItem'
 import { PriceChart } from '../components/PriceChart'
 
-export function CollezioneScreen({ carte, onRimuovi, loading }: {
+export function CollezioneScreen({ carte, onRimuovi, loading, onCartaPress }: {
   carte: Carta[]
   onRimuovi: (id: string) => void
   loading: boolean
+  onCartaPress: (carta: Carta) => void
 }) {
   const [filtroAttivo, setFiltroAttivo] = useState('Tutte')
 
@@ -75,7 +76,12 @@ export function CollezioneScreen({ carte, onRimuovi, loading }: {
       )}
 
       {carteFiltrate.map((card) => (
-        <CardItem key={card.id} card={card} onRimuovi={onRimuovi} />
+        <CardItem
+          key={card.id}
+          card={card}
+          onRimuovi={onRimuovi}
+          onPress={onCartaPress}
+        />
       ))}
     </ScrollView>
   )

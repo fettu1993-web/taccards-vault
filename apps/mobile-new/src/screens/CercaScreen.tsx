@@ -1,11 +1,107 @@
 import { useState, useEffect } from 'react'
-import { View, Text, ScrollView, TextInput, TouchableOpacity, StyleSheet, ActivityIndicator, Alert, Modal } from 'react-native'
+import { View, Text, ScrollView, TextInput, TouchableOpacity, StyleSheet, ActivityIndicator, Alert, Modal, Image } from 'react-native'
 import { Carta, mapCatalogCard, SPORT_FILTER_MAP } from '../types'
 import { apiFetch } from '../lib/api'
 
+const GRADER_CONFIG = [
+  { company: null,    label: 'Raw',   valori: [] },
+  { company: 'psa',  label: 'PSA',   valori: ['10', '9', '8', '7', '6', '5', '4', '3', '2', '1'] },
+  { company: 'bgs',  label: 'BGS',   valori: ['10', '9.5', '9', '8.5', '8', '7.5', '7', '6.5', '6', '5.5', '5', '4.5', '4', '3.5', '3', '2.5', '2', '1.5', '1'] },
+  { company: 'cgc',  label: 'CGC',   valori: ['10', '9.5', '9', '8.5', '8', '7.5', '7', '6.5', '6', '5.5', '5', '4.5', '4', '3.5', '3', '2.5', '2', '1.5', '1'] },
+  { company: 'graad', label: 'GRAAD', valori: ['10', '9.5', '9', '8.5', '8', '7.5', '7', '6.5', '6', '5.5', '5', '4.5', '4', '3.5', '3', '2.5', '2', '1.5', '1'] },
+]
+
+interface GradeValue {
+  label: string
+  condition: string
+  company: string | null
+  value: string | null
+}
+
+const DEFAULT_GRADE: GradeValue = { label: 'Raw', condition: 'raw', company: null, value: null }
+
+function GradeSelector({ value, onChange }: { value: GradeValue, onChange: (g: GradeValue) => void }) {
+  const [aperto, setAperto] = useState<string | null>(null)
+
+  function selezionaRaw() {
+    onChange(DEFAULT_GRADE)
+    setAperto(null)
+  }
+
+  function selezionaVoto(company: string, voto: string) {
+    onChange({ label: `${company.toUpperCase()} ${voto}`, condition: 'graded', company, value: voto })
+    setAperto(null)
+  }
+
+  return (
+    <View style={gs.wrap}>
+      <View style={gs.row}>
+        {GRADER_CONFIG.map((g) => {
+          const isRaw = g.company === null
+          const isAttivo = isRaw ? value.label === 'Raw' : value.company === g.company
+          const isOpen = aperto === g.label
+          return (
+            <TouchableOpacity
+              key={g.label}
+              style={[gs.btn, isAttivo && gs.btnAttivo]}
+              onPress={() => {
+                if (isRaw) { selezionaRaw(); return }
+                setAperto(isOpen ? null : g.label)
+              }}
+            >
+              <Text style={[gs.btnText, isAttivo && gs.btnTextAttivo]}>
+                {g.label}{!isRaw ? (isOpen ? ' ▲' : ' ▼') : ''}
+              </Text>
+            </TouchableOpacity>
+          )
+        })}
+      </View>
+
+      {GRADER_CONFIG.filter(g => g.company && aperto === g.label).map((g) => (
+        <View key={g.label} style={gs.dropdown}>
+          {g.valori.map((voto) => {
+            const isSelezionato = value.company === g.company && value.value === voto
+            return (
+              <TouchableOpacity
+                key={voto}
+                style={[gs.votoBtn, isSelezionato && gs.votoBtnAttivo]}
+                onPress={() => selezionaVoto(g.company!, voto)}
+              >
+                <Text style={[gs.votoText, isSelezionato && gs.votoTextAttivo]}>
+                  {g.label.toUpperCase()} {voto}
+                </Text>
+              </TouchableOpacity>
+            )
+          })}
+        </View>
+      ))}
+
+      {value.label !== 'Raw' && (
+        <Text style={gs.selectedLabel}>Selezionato: <Text style={gs.selectedValue}>{value.label}</Text></Text>
+      )}
+    </View>
+  )
+}
+
+const gs = StyleSheet.create({
+  wrap: { marginBottom: 4 },
+  row: { flexDirection: 'row', gap: 8 },
+  btn: { flex: 1, paddingVertical: 10, borderRadius: 10, backgroundColor: '#F1EFE8', borderWidth: 0.5, borderColor: '#D3D1C7', alignItems: 'center' },
+  btnAttivo: { backgroundColor: '#534AB7', borderColor: '#534AB7' },
+  btnText: { fontSize: 14, fontWeight: '600', color: '#888780' },
+  btnTextAttivo: { color: '#fff' },
+  dropdown: { flexDirection: 'row', flexWrap: 'wrap', gap: 8, marginTop: 10, padding: 12, backgroundColor: '#F1EFE8', borderRadius: 10, borderWidth: 0.5, borderColor: '#D3D1C7' },
+  votoBtn: { paddingHorizontal: 14, paddingVertical: 8, borderRadius: 20, backgroundColor: '#fff', borderWidth: 0.5, borderColor: '#D3D1C7' },
+  votoBtnAttivo: { backgroundColor: '#534AB7', borderColor: '#534AB7' },
+  votoText: { fontSize: 13, fontWeight: '500', color: '#2C2C2A' },
+  votoTextAttivo: { color: '#fff' },
+  selectedLabel: { fontSize: 12, color: '#888780', marginTop: 8 },
+  selectedValue: { color: '#534AB7', fontWeight: '600' },
+})
+
 export function CercaScreen({ collezione, onAggiungi }: {
   collezione: Carta[]
-  onAggiungi: (carta: Carta, purchasePrice: number) => void
+  onAggiungi: (carta: Carta, purchasePrice: number, condition: string, gradeCompany: string | null, gradeValue: string | null) => void
 }) {
   const [query, setQuery] = useState('')
   const [filtroSport, setFiltroSport] = useState('Tutti')
@@ -14,12 +110,11 @@ export function CercaScreen({ collezione, onAggiungi }: {
   const [modalVisible, setModalVisible] = useState(false)
   const [cartaSelezionata, setCartaSelezionata] = useState<Carta | null>(null)
   const [prezzoAcquisto, setPrezzoAcquisto] = useState('')
+  const [gradeSelezionato, setGradeSelezionato] = useState<GradeValue>(DEFAULT_GRADE)
   const [aggiungendo, setAggiungendo] = useState(false)
 
   useEffect(() => {
-    const timeout = setTimeout(() => {
-      loadCards()
-    }, 300)
+    const timeout = setTimeout(() => { loadCards() }, 300)
     return () => clearTimeout(timeout)
   }, [query, filtroSport])
 
@@ -46,6 +141,7 @@ export function CercaScreen({ collezione, onAggiungi }: {
     }
     setCartaSelezionata(carta)
     setPrezzoAcquisto('')
+    setGradeSelezionato(DEFAULT_GRADE)
     setModalVisible(true)
   }
 
@@ -57,7 +153,7 @@ export function CercaScreen({ collezione, onAggiungi }: {
       return
     }
     setAggiungendo(true)
-    await onAggiungi(cartaSelezionata, prezzo)
+    await onAggiungi(cartaSelezionata, prezzo, gradeSelezionato.condition, gradeSelezionato.company, gradeSelezionato.value)
     setAggiungendo(false)
     setModalVisible(false)
   }
@@ -65,6 +161,7 @@ export function CercaScreen({ collezione, onAggiungi }: {
   return (
     <ScrollView style={styles.screen} contentContainerStyle={styles.screenContent}>
       <Text style={styles.screenTitle}>Cerca carte</Text>
+
       <View style={styles.searchBox}>
         <Text style={styles.searchIcon}>🔍</Text>
         <TextInput style={styles.searchInput} placeholder="Cerca giocatore, set, anno..."
@@ -91,7 +188,17 @@ export function CercaScreen({ collezione, onAggiungi }: {
         const inCollezione = !!collezione.find(c => c.cardId === card.cardId)
         return (
           <View key={card.id} style={styles.cardItem}>
-            <View style={styles.cardIcon}><Text style={styles.cardIconText}>{card.sport}</Text></View>
+            {card.imageUrl ? (
+              <Image
+                source={{ uri: card.imageUrl }}
+                style={styles.cardImage}
+                resizeMode="contain"
+              />
+            ) : (
+              <View style={styles.cardIcon}>
+                <Text style={styles.cardIconText}>{card.sport}</Text>
+              </View>
+            )}
             <View style={styles.cardInfo}>
               <Text style={styles.cardPlayer}>{card.player}</Text>
               <Text style={styles.cardSet}>{card.set}</Text>
@@ -99,8 +206,10 @@ export function CercaScreen({ collezione, onAggiungi }: {
             </View>
             <View style={styles.cardPrices}>
               <Text style={styles.cardCurrentPrice}>€{card.currentPrice}</Text>
-              <TouchableOpacity style={[styles.addBtn, inCollezione && styles.addBtnDone]}
-                onPress={() => apriModal(card)} disabled={inCollezione}>
+              <TouchableOpacity
+                style={[styles.addBtn, inCollezione && styles.addBtnDone]}
+                onPress={() => apriModal(card)}
+                disabled={inCollezione}>
                 <Text style={[styles.addBtnText, inCollezione && styles.addBtnTextDone]}>
                   {inCollezione ? '✓ Aggiunta' : '+ Aggiungi'}
                 </Text>
@@ -110,21 +219,29 @@ export function CercaScreen({ collezione, onAggiungi }: {
         )
       })}
 
-      {/* Modal prezzo acquisto */}
       <Modal visible={modalVisible} transparent animationType="fade">
         <View style={styles.modalOverlay}>
           <View style={styles.modalBox}>
             {cartaSelezionata && (
               <>
                 <Text style={styles.modalTitle}>Aggiungi alla collezione</Text>
+
                 <View style={styles.modalCartaInfo}>
-                  <Text style={styles.modalCartaSport}>{cartaSelezionata.sport}</Text>
+                  {cartaSelezionata.imageUrl ? (
+                    <Image source={{ uri: cartaSelezionata.imageUrl }} style={styles.modalCartaImage} resizeMode="contain" />
+                  ) : (
+                    <Text style={styles.modalCartaSport}>{cartaSelezionata.sport}</Text>
+                  )}
                   <View>
                     <Text style={styles.modalCartaPlayer}>{cartaSelezionata.player}</Text>
                     <Text style={styles.modalCartaSet}>{cartaSelezionata.set}</Text>
                   </View>
                 </View>
-                <Text style={styles.modalLabel}>Prezzo di acquisto (€)</Text>
+
+                <Text style={styles.modalLabel}>Condizione / Grade</Text>
+                <GradeSelector value={gradeSelezionato} onChange={setGradeSelezionato} />
+
+                <Text style={[styles.modalLabel, { marginTop: 16 }]}>Prezzo di acquisto (€)</Text>
                 <TextInput
                   style={styles.modalInput}
                   placeholder="es. 85.00"
@@ -137,21 +254,15 @@ export function CercaScreen({ collezione, onAggiungi }: {
                 <Text style={styles.modalHint}>
                   Valore di mercato attuale: €{cartaSelezionata.currentPrice}
                 </Text>
+
                 <View style={styles.modalButtons}>
-                  <TouchableOpacity
-                    style={styles.modalBtnAnnulla}
-                    onPress={() => setModalVisible(false)}
-                    disabled={aggiungendo}>
+                  <TouchableOpacity style={styles.modalBtnAnnulla} onPress={() => setModalVisible(false)} disabled={aggiungendo}>
                     <Text style={styles.modalBtnAnnullaText}>Annulla</Text>
                   </TouchableOpacity>
-                  <TouchableOpacity
-                    style={[styles.modalBtnAggiungi, aggiungendo && { opacity: 0.6 }]}
-                    onPress={confermaAggiungi}
-                    disabled={aggiungendo}>
+                  <TouchableOpacity style={[styles.modalBtnAggiungi, aggiungendo && { opacity: 0.6 }]} onPress={confermaAggiungi} disabled={aggiungendo}>
                     {aggiungendo
                       ? <ActivityIndicator color="#fff" />
-                      : <Text style={styles.modalBtnAggiungiText}>Aggiungi</Text>
-                    }
+                      : <Text style={styles.modalBtnAggiungiText}>Aggiungi</Text>}
                   </TouchableOpacity>
                 </View>
               </>
@@ -177,6 +288,7 @@ const styles = StyleSheet.create({
   filtroTextAttivo: { color: '#fff', fontWeight: '500' },
   emptyText: { textAlign: 'center', color: '#888780', marginTop: 40, fontSize: 15 },
   cardItem: { backgroundColor: '#fff', borderRadius: 12, padding: 16, borderWidth: 0.5, borderColor: '#D3D1C7', marginBottom: 8, flexDirection: 'row', alignItems: 'center' },
+  cardImage: { width: 44, height: 60, borderRadius: 4, marginRight: 12, backgroundColor: '#F1EFE8' },
   cardIcon: { width: 44, height: 44, borderRadius: 22, backgroundColor: '#F1EFE8', alignItems: 'center', justifyContent: 'center', marginRight: 12 },
   cardIconText: { fontSize: 22 },
   cardInfo: { flex: 1 },
@@ -189,11 +301,11 @@ const styles = StyleSheet.create({
   addBtnDone: { backgroundColor: '#EAF3DE' },
   addBtnText: { color: '#534AB7', fontSize: 11, fontWeight: '500' },
   addBtnTextDone: { color: '#3B6D11' },
-  // Modal
   modalOverlay: { flex: 1, backgroundColor: 'rgba(0,0,0,0.5)', alignItems: 'center', justifyContent: 'center', padding: 24 },
   modalBox: { backgroundColor: '#fff', borderRadius: 16, padding: 24, width: '100%', maxWidth: 400 },
   modalTitle: { fontSize: 18, fontWeight: '500', color: '#2C2C2A', marginBottom: 16 },
   modalCartaInfo: { flexDirection: 'row', alignItems: 'center', backgroundColor: '#F1EFE8', borderRadius: 10, padding: 12, marginBottom: 20, gap: 12 },
+  modalCartaImage: { width: 40, height: 55, borderRadius: 4 },
   modalCartaSport: { fontSize: 28 },
   modalCartaPlayer: { fontSize: 14, fontWeight: '500', color: '#2C2C2A' },
   modalCartaSet: { fontSize: 12, color: '#888780', marginTop: 2 },

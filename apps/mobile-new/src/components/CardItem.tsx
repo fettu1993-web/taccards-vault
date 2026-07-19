@@ -1,15 +1,35 @@
-import { View, Text, TouchableOpacity, StyleSheet, Alert } from 'react-native'
+import { View, Text, TouchableOpacity, StyleSheet, Alert, Image } from 'react-native'
 import { Carta } from '../types'
 
-export function CardItem({ card, onRimuovi }: { card: Carta, onRimuovi?: (id: string) => void }) {
+export function CardItem({ card, onRimuovi, onPress }: {
+  card: Carta
+  onRimuovi?: (id: string) => void
+  onPress?: (carta: Carta) => void
+}) {
   const cardRoi = card.buyPrice > 0
     ? (((card.currentPrice - card.buyPrice) / card.buyPrice) * 100).toFixed(1)
     : null
   const cardRoiPos = cardRoi ? Number(cardRoi) >= 0 : true
 
   return (
-    <View style={styles.cardItem}>
-      <View style={styles.cardIcon}><Text style={styles.cardIconText}>{card.sport}</Text></View>
+    <TouchableOpacity
+      style={styles.cardItem}
+      onPress={() => onPress?.(card)}
+      activeOpacity={onPress ? 0.7 : 1}
+    >
+      {/* Immagine o emoji fallback */}
+      {card.imageUrl ? (
+        <Image
+          source={{ uri: card.imageUrl }}
+          style={styles.cardImage}
+          resizeMode="contain"
+        />
+      ) : (
+        <View style={styles.cardIcon}>
+          <Text style={styles.cardIconText}>{card.sport}</Text>
+        </View>
+      )}
+
       <View style={styles.cardInfo}>
         <Text style={styles.cardPlayer}>{card.player}</Text>
         <Text style={styles.cardSet}>{card.set}</Text>
@@ -31,12 +51,13 @@ export function CardItem({ card, onRimuovi }: { card: Carta, onRimuovi?: (id: st
           </TouchableOpacity>
         )}
       </View>
-    </View>
+    </TouchableOpacity>
   )
 }
 
 const styles = StyleSheet.create({
   cardItem: { backgroundColor: '#fff', borderRadius: 12, padding: 16, borderWidth: 0.5, borderColor: '#D3D1C7', marginBottom: 8, flexDirection: 'row', alignItems: 'center' },
+  cardImage: { width: 44, height: 60, borderRadius: 4, marginRight: 12, backgroundColor: '#F1EFE8' },
   cardIcon: { width: 44, height: 44, borderRadius: 22, backgroundColor: '#F1EFE8', alignItems: 'center', justifyContent: 'center', marginRight: 12 },
   cardIconText: { fontSize: 22 },
   cardInfo: { flex: 1 },

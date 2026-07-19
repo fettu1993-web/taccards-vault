@@ -1,6 +1,6 @@
 import { supabase } from './supabase'
 
-export const API_URL = 'http://localhost:3000/api/v1'
+export const API_URL = 'https://taccardsbackend-production.up.railway.app/api/v1'
 
 export async function apiFetch(path: string, options?: RequestInit) {
   const { data: { session } } = await supabase.auth.getSession()

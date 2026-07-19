@@ -8,6 +8,7 @@ export interface Carta {
   currentPrice: number
   sport: string
   categoria: string
+  imageUrl: string | null
 }
 
 export const SPORT_MAP: Record<string, { label: string; emoji: string }> = {
@@ -45,6 +46,7 @@ export function mapUserCard(uc: any): Carta {
     currentPrice: Number(latestPrice),
     sport: sportInfo.emoji,
     categoria: sportInfo.label,
+    imageUrl: uc.card.imageUrl ?? null,
   }
 }
 
@@ -61,5 +63,6 @@ export function mapCatalogCard(card: any): Carta {
     currentPrice: Number(latestPrice),
     sport: sportInfo.emoji,
     categoria: sportInfo.label,
+    imageUrl: card.imageUrl ?? null,
   }
 }
