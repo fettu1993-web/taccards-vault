@@ -34,9 +34,7 @@ export async function collectionRoutes(app: FastifyInstance) {
         card: {
           include: {
             priceHistory: {
-  orderBy: { saleDate: 'desc' },
-},
-              take: 1,
+              orderBy: { saleDate: 'desc' },
             },
           },
         },
@@ -44,9 +42,10 @@ export async function collectionRoutes(app: FastifyInstance) {
       orderBy: { createdAt: 'desc' },
     })
 
-    // Calcola valore totale portfolio
+    // Calcola valore totale portfolio usando il prezzo raw
     const totalValue = userCards.reduce((sum, uc) => {
-      const latestPrice = uc.card.priceHistory[0]?.price ?? new Prisma.Decimal(0)
+      const rawPrice = uc.card.priceHistory.find((p: any) => p.gradeLabel === 'raw')
+      const latestPrice = rawPrice?.price ?? uc.card.priceHistory[0]?.price ?? new Prisma.Decimal(0)
       return sum + Number(latestPrice)
     }, 0)
 
@@ -132,7 +131,6 @@ export async function collectionRoutes(app: FastifyInstance) {
   })
 
   // GET /api/v1/collection/portfolio-history?days=365
-  // Restituisce l'andamento del valore totale del portfolio nel tempo
   app.get('/portfolio-history', { preHandler: authenticate }, async (req, reply) => {
     const user = (req as any).user
     const { days = '365' } = req.query as { days?: string }
@@ -140,13 +138,11 @@ export async function collectionRoutes(app: FastifyInstance) {
     const since = new Date()
     since.setDate(since.getDate() - Number(days))
 
-    // Prende tutte le userCard con storico prezzi aggregato per data
     const userCards = await prisma.userCard.findMany({
       where: { userId: user.id, status: 'in_collection' },
       select: { cardId: true, gradeValue: true, condition: true, purchasePrice: true },
     })
 
-    // Per ogni data, somma i prezzi più recenti di ogni carta
     const pricesByDate = await prisma.priceHistory.groupBy({
       by: ['saleDate'],
       where: {
