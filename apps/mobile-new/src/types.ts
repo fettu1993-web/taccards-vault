@@ -29,13 +29,29 @@ export const SPORT_FILTER_MAP: Record<string, string> = {
   'Football': 'football',
 }
 
+// Costruisce il gradeLabel dal condition/company/value della userCard
+function buildGradeLabel(condition: string, gradeCompany: string | null, gradeValue: string | null): string {
+  if (condition === 'raw' || !gradeCompany) return 'raw'
+  return `${gradeCompany.toUpperCase()} ${gradeValue ?? ''}`.trim()
+}
+
 export function mapUserCard(uc: any): Carta {
   const sportInfo = SPORT_MAP[uc.card.sport] ?? { label: uc.card.sport, emoji: '🃏' }
-  const latestPrice = uc.card.priceHistory?.[0]?.price ?? 0
+
+  // Costruisci il gradeLabel corretto per questa carta
+  const gradeLabel = buildGradeLabel(uc.condition, uc.gradeCompany, uc.gradeValue)
+
+  // Cerca il prezzo corrispondente al grade specifico
+  const priceHistory = uc.card.priceHistory ?? []
+  const gradePrice = priceHistory.find((p: any) => p.gradeLabel === gradeLabel)
+  const rawPrice = priceHistory.find((p: any) => p.gradeLabel === 'raw')
+  const latestPrice = gradePrice?.price ?? rawPrice?.price ?? 0
+
   let grade = 'Raw'
   if (uc.condition !== 'raw' && uc.gradeCompany) {
     grade = `${uc.gradeCompany.toUpperCase()} ${uc.gradeValue ?? ''}`.trim()
   }
+
   return {
     id: uc.id,
     cardId: uc.cardId,
@@ -52,7 +68,9 @@ export function mapUserCard(uc: any): Carta {
 
 export function mapCatalogCard(card: any): Carta {
   const sportInfo = SPORT_MAP[card.sport] ?? { label: card.sport, emoji: '🃏' }
-  const latestPrice = card.priceHistory?.[0]?.price ?? 0
+  const priceHistory = card.priceHistory ?? []
+  const rawPrice = priceHistory.find((p: any) => p.gradeLabel === 'raw')
+  const latestPrice = rawPrice?.price ?? priceHistory[0]?.price ?? 0
   return {
     id: card.id,
     cardId: card.id,
