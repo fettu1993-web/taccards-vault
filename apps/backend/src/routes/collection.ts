@@ -34,7 +34,8 @@ export async function collectionRoutes(app: FastifyInstance) {
         card: {
           include: {
             priceHistory: {
-              orderBy: { saleDate: 'desc' },
+  orderBy: { saleDate: 'desc' },
+},
               take: 1,
             },
           },
