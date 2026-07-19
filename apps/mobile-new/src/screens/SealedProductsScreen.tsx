@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react'
-import { View, Text, ScrollView, TouchableOpacity, StyleSheet, Modal, TextInput, ActivityIndicator, Alert } from 'react-native'
+import { View, Text, ScrollView, TouchableOpacity, StyleSheet, Modal, TextInput, ActivityIndicator } from 'react-native'
 import { apiFetch } from '../lib/api'
+import { SealedDetailScreen } from './SealedDetailScreen'
 
 interface SealedProduct {
   id: string
@@ -51,6 +52,7 @@ export function SealedProductsScreen() {
   const [loading, setLoading] = useState(true)
   const [modalVisible, setModalVisible] = useState(false)
   const [filtroStatus, setFiltroStatus] = useState<'tutti' | 'sealed' | 'opened'>('tutti')
+  const [prodottoDettaglio, setProdottoDettaglio] = useState<SealedProduct | null>(null)
 
   const [formName, setFormName] = useState('')
   const [formSport, setFormSport] = useState(SPORT_OPTIONS[0])
@@ -86,46 +88,34 @@ export function SealedProductsScreen() {
   const roiPos = Number(roi) >= 0
 
   function apriModal() {
-    setFormName('')
-    setFormSport(SPORT_OPTIONS[0])
-    setFormProductType(PRODUCT_TYPES[0])
-    setFormSetName('')
-    setFormYear(new Date().getFullYear().toString())
-    setFormBuyPrice('')
-    setFormCurrentValue('')
-    setFormQuantity('1')
-    setFormNotes('')
+    setFormName(''); setFormSport(SPORT_OPTIONS[0]); setFormProductType(PRODUCT_TYPES[0])
+    setFormSetName(''); setFormYear(new Date().getFullYear().toString())
+    setFormBuyPrice(''); setFormCurrentValue(''); setFormQuantity('1'); setFormNotes('')
     setModalVisible(true)
   }
 
   async function salvaProdotto() {
-    if (!formName.trim()) { Alert.alert('Nome mancante', 'Inserisci il nome del prodotto.'); return }
-    if (!formSetName.trim()) { Alert.alert('Set mancante', 'Inserisci il nome del set.'); return }
+    if (!formName.trim()) { window.alert('Inserisci il nome del prodotto.'); return }
+    if (!formSetName.trim()) { window.alert('Inserisci il nome del set.'); return }
     const buyPrice = parseFloat(formBuyPrice.replace(',', '.'))
-    if (isNaN(buyPrice) || buyPrice <= 0) { Alert.alert('Prezzo non valido', 'Inserisci un prezzo valido.'); return }
+    if (isNaN(buyPrice) || buyPrice <= 0) { window.alert('Inserisci un prezzo valido.'); return }
     const year = parseInt(formYear)
-    if (isNaN(year)) { Alert.alert('Anno non valido', 'Inserisci un anno valido.'); return }
-
+    if (isNaN(year)) { window.alert('Inserisci un anno valido.'); return }
     setSalvando(true)
     try {
       await apiFetch('/sealed', {
         method: 'POST',
         body: JSON.stringify({
-          name: formName.trim(),
-          category: formSport.value,
-          productType: formProductType,
-          setName: formSetName.trim(),
-          year,
-          quantity: parseInt(formQuantity) || 1,
-          purchasePrice: buyPrice,
-          purchaseDate: new Date().toISOString(),
+          name: formName.trim(), category: formSport.value, productType: formProductType,
+          setName: formSetName.trim(), year, quantity: parseInt(formQuantity) || 1,
+          purchasePrice: buyPrice, purchaseDate: new Date().toISOString(),
           notes: formNotes.trim() || undefined,
         }),
       })
       await fetchProdotti()
       setModalVisible(false)
     } catch (e: any) {
-      Alert.alert('Errore', e.message || 'Non è stato possibile salvare il prodotto.')
+      window.alert(e.message || 'Errore nel salvataggio.')
     }
     setSalvando(false)
   }
@@ -133,31 +123,36 @@ export function SealedProductsScreen() {
   async function toggleStatus(p: SealedProduct) {
     const nuovoStatus = p.status === 'sealed' ? 'opened' : 'sealed'
     try {
-      await apiFetch(`/sealed/${p.id}`, {
-        method: 'PATCH',
-        body: JSON.stringify({ status: nuovoStatus }),
-      })
+      await apiFetch(`/sealed/${p.id}`, { method: 'PATCH', body: JSON.stringify({ status: nuovoStatus }) })
       setProdotti(prev => prev.map(x => x.id === p.id ? { ...x, status: nuovoStatus } : x))
-    } catch (e) {
-      // fallback ottimistico già applicato — ricarica
-      await fetchProdotti()
-    }
+    } catch (e) { await fetchProdotti() }
   }
 
   async function rimuoviProdotto(id: string) {
-    Alert.alert('Rimuovi prodotto', 'Sei sicuro?', [
-      { text: 'Annulla', style: 'cancel' },
-      {
-        text: 'Rimuovi', style: 'destructive', onPress: async () => {
-          try {
-            await apiFetch(`/sealed/${id}`, { method: 'DELETE' })
-            setProdotti(prev => prev.filter(p => p.id !== id))
-          } catch (e: any) {
-            Alert.alert('Errore', e.message || 'Non è stato possibile rimuovere il prodotto.')
-          }
-        }
-      },
-    ])
+    try {
+      await apiFetch(`/sealed/${id}`, { method: 'DELETE' })
+      setProdotti(prev => prev.filter(p => p.id !== id))
+      setProdottoDettaglio(null)
+    } catch (e: any) {
+      window.alert(e.message || 'Errore nella rimozione.')
+    }
+  }
+
+  function onUpdate(id: string, nuovoValore: number) {
+    setProdotti(prev => prev.map(p => p.id === id ? { ...p, currentValue: nuovoValore } : p))
+    setProdottoDettaglio(prev => prev ? { ...prev, currentValue: nuovoValore } : null)
+  }
+
+  // Schermata dettaglio
+  if (prodottoDettaglio) {
+    return (
+      <SealedDetailScreen
+        prodotto={prodottoDettaglio}
+        onBack={() => setProdottoDettaglio(null)}
+        onRimuovi={rimuoviProdotto}
+        onUpdate={onUpdate}
+      />
+    )
   }
 
   return (
@@ -213,16 +208,14 @@ export function SealedProductsScreen() {
             const itemRoi = p.buyPrice > 0 ? (((p.currentValue - p.buyPrice) / p.buyPrice) * 100).toFixed(1) : null
             const itemRoiPos = itemRoi ? Number(itemRoi) >= 0 : true
             return (
-              <View key={p.id} style={styles.productCard}>
+              <TouchableOpacity key={p.id} style={styles.productCard} onPress={() => setProdottoDettaglio(p)} activeOpacity={0.7}>
                 <View style={styles.productHeader}>
                   <View style={styles.productIconWrap}>
                     <Text style={styles.productEmoji}>{p.sportEmoji}</Text>
                   </View>
                   <View style={styles.productInfo}>
                     <Text style={styles.productName}>{p.name}</Text>
-                    <Text style={styles.productMeta}>
-                      {p.productType} · {p.quantity > 1 ? `x${p.quantity} · ` : ''}{p.purchaseDate}
-                    </Text>
+                    <Text style={styles.productMeta}>{p.productType} · {p.quantity > 1 ? `x${p.quantity} · ` : ''}{p.purchaseDate}</Text>
                     {p.notes ? <Text style={styles.productNotes}>{p.notes}</Text> : null}
                   </View>
                   <View style={[styles.statusBadge, p.status === 'sealed' ? styles.statusSealed : styles.statusOpened]}>
@@ -249,16 +242,17 @@ export function SealedProductsScreen() {
                 </View>
 
                 <View style={styles.productActions}>
-                  <TouchableOpacity style={styles.actionBtn} onPress={() => toggleStatus(p)}>
-                    <Text style={styles.actionBtnText}>
-                      {p.status === 'sealed' ? 'Segna aperto' : 'Segna sigillato'}
-                    </Text>
+                  <TouchableOpacity style={styles.actionBtn} onPress={(e) => { e.stopPropagation?.(); toggleStatus(p) }}>
+                    <Text style={styles.actionBtnText}>{p.status === 'sealed' ? 'Segna aperto' : 'Segna sigillato'}</Text>
                   </TouchableOpacity>
-                  <TouchableOpacity style={styles.actionBtnDelete} onPress={() => rimuoviProdotto(p.id)}>
+                  <TouchableOpacity style={styles.actionBtnDelete} onPress={(e) => {
+                    e.stopPropagation?.()
+                    if (window.confirm(`Rimuovere ${p.name}?`)) rimuoviProdotto(p.id)
+                  }}>
                     <Text style={styles.actionBtnDeleteText}>🗑</Text>
                   </TouchableOpacity>
                 </View>
-              </View>
+              </TouchableOpacity>
             )
           })}
         </>
@@ -279,9 +273,7 @@ export function SealedProductsScreen() {
                 <TouchableOpacity key={s.value}
                   style={[styles.chip, formSport.value === s.value && styles.chipAttivo]}
                   onPress={() => setFormSport(s)}>
-                  <Text style={[styles.chipText, formSport.value === s.value && styles.chipTextAttivo]}>
-                    {s.emoji} {s.label}
-                  </Text>
+                  <Text style={[styles.chipText, formSport.value === s.value && styles.chipTextAttivo]}>{s.emoji} {s.label}</Text>
                 </TouchableOpacity>
               ))}
             </View>
@@ -292,9 +284,7 @@ export function SealedProductsScreen() {
                 <TouchableOpacity key={t}
                   style={[styles.chip, formProductType === t && styles.chipAttivo]}
                   onPress={() => setFormProductType(t)}>
-                  <Text style={[styles.chipText, formProductType === t && styles.chipTextAttivo]}>
-                    {t}
-                  </Text>
+                  <Text style={[styles.chipText, formProductType === t && styles.chipTextAttivo]}>{t}</Text>
                 </TouchableOpacity>
               ))}
             </View>
