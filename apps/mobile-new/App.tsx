@@ -1,10 +1,13 @@
 import { useState, useEffect } from 'react'
-import { View, Text, ActivityIndicator, Alert } from 'react-native'
+import { View, Text, ActivityIndicator } from 'react-native'
+import AsyncStorage from '@react-native-async-storage/async-storage'
 import { supabase } from './src/lib/supabase'
 import { apiFetch } from './src/lib/api'
 import { Carta, mapUserCard } from './src/types'
 import { TabBar } from './src/components/TabBar'
+import { Toast, ToastMessage } from './src/components/Toast'
 import { LoginScreen } from './src/screens/LoginScreen'
+import { OnboardingScreen } from './src/screens/OnboardingScreen'
 import { CollezioneScreen } from './src/screens/CollezioneScreen'
 import { CercaScreen } from './src/screens/CercaScreen'
 import { ScannerScreen } from './src/screens/ScannerScreen'
@@ -15,13 +18,19 @@ import { CartaDetailScreen } from './src/screens/CartaDetailScreen'
 export default function App() {
   const [session, setSession] = useState<any>(null)
   const [loading, setLoading] = useState(true)
+  const [showOnboarding, setShowOnboarding] = useState<boolean | null>(null)
   const [activeTab, setActiveTab] = useState('collezione')
   const [collezione, setCollezione] = useState<Carta[]>([])
   const [loadingCollection, setLoadingCollection] = useState(false)
   const [cartaDettaglio, setCartaDettaglio] = useState<Carta | null>(null)
+  const [toast, setToast] = useState<ToastMessage | null>(null)
 
   const user = session?.user
   const token = session?.access_token
+
+  function showToast(text: string, type: 'success' | 'error') {
+    setToast({ text, type })
+  }
 
   useEffect(() => {
     supabase.auth.getSession().then(({ data: { session } }) => {
@@ -32,6 +41,12 @@ export default function App() {
       setSession(session)
     })
     return () => subscription.unsubscribe()
+  }, [])
+
+  useEffect(() => {
+    AsyncStorage.getItem('onboarding_done').then(val => {
+      setShowOnboarding(val !== 'true')
+    })
   }, [])
 
   useEffect(() => {
@@ -49,13 +64,17 @@ export default function App() {
     setLoadingCollection(false)
   }
 
-  if (loading) {
+  if (loading || showOnboarding === null) {
     return (
       <View style={{ flex: 1, backgroundColor: '#F1EFE8', alignItems: 'center', justifyContent: 'center' }}>
         <Text style={{ fontSize: 24, fontWeight: '500', color: '#534AB7', marginBottom: 16 }}>TacCards Vault</Text>
         <ActivityIndicator color="#534AB7" />
       </View>
     )
+  }
+
+  if (showOnboarding) {
+    return <OnboardingScreen onDone={() => setShowOnboarding(false)} />
   }
 
   if (!user) return <LoginScreen onLogin={setSession} />
@@ -76,12 +95,18 @@ export default function App() {
     try {
       await apiFetch('/collection', {
         method: 'POST',
-        body: JSON.stringify({ cardId: carta.cardId, condition, gradeCompany, gradeValue, purchasePrice }),
+        body: JSON.stringify({
+          cardId: carta.cardId,
+          condition,
+          gradeCompany: gradeCompany ?? undefined,
+          gradeValue: gradeValue ?? undefined,
+          purchasePrice,
+        }),
       })
       await fetchCollection()
-      Alert.alert('✅ Aggiunta!', `${carta.player} è stata aggiunta alla tua collezione.`)
+      showToast(`✅ ${carta.player} aggiunta alla collezione!`, 'success')
     } catch (e: any) {
-      Alert.alert('Errore', e.message || 'Non è stato possibile aggiungere la carta.')
+      showToast(typeof e === 'string' ? e : e?.message || 'Non è stato possibile aggiungere la carta.', 'error')
     }
   }
 
@@ -89,12 +114,12 @@ export default function App() {
     try {
       await apiFetch(`/collection/${id}`, { method: 'DELETE' })
       setCollezione(prev => prev.filter(c => c.id !== id))
+      showToast('Carta rimossa dalla collezione.', 'success')
     } catch (e: any) {
-      Alert.alert('Errore', e.message || 'Non è stato possibile rimuovere la carta.')
+      showToast(e.message || 'Non è stato possibile rimuovere la carta.', 'error')
     }
   }
 
-  // Se stiamo vedendo il dettaglio di una carta, mostra solo quello (niente tab bar)
   if (cartaDettaglio) {
     return (
       <View style={{ flex: 1, backgroundColor: '#F1EFE8' }}>
@@ -106,6 +131,7 @@ export default function App() {
             setCartaDettaglio(null)
           }}
         />
+        <Toast message={toast} onHide={() => setToast(null)} />
       </View>
     )
   }
@@ -124,6 +150,7 @@ export default function App() {
         <CercaScreen
           collezione={collezione}
           onAggiungi={handleAggiungi}
+          onToast={showToast}
         />
       )}
       {activeTab === 'scanner' && <ScannerScreen />}
@@ -132,6 +159,7 @@ export default function App() {
         <ProfiloScreen user={user} onLogout={handleLogout} carte={collezione} />
       )}
       <TabBar active={activeTab} onPress={setActiveTab} />
+      <Toast message={toast} onHide={() => setToast(null)} />
     </View>
   )
 }

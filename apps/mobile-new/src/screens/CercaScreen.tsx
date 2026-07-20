@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react'
-import { View, Text, ScrollView, TextInput, TouchableOpacity, StyleSheet, ActivityIndicator, Alert, Modal, Image } from 'react-native'
+import { View, Text, ScrollView, TextInput, TouchableOpacity, StyleSheet, ActivityIndicator, Modal, Image } from 'react-native'
 import { Carta, mapCatalogCard, SPORT_FILTER_MAP } from '../types'
 import { apiFetch } from '../lib/api'
 
@@ -88,9 +88,10 @@ const gs = StyleSheet.create({
   selectedValue: { color: '#534AB7', fontWeight: '600' },
 })
 
-export function CercaScreen({ collezione, onAggiungi }: {
+export function CercaScreen({ collezione, onAggiungi, onToast }: {
   collezione: Carta[]
   onAggiungi: (carta: Carta, purchasePrice: number, condition: string, gradeCompany: string | null, gradeValue: string | null) => void
+  onToast: (text: string, type: 'success' | 'error') => void
 }) {
   const [query, setQuery] = useState('')
   const [filtroSport, setFiltroSport] = useState('Tutti')
@@ -116,9 +117,7 @@ export function CercaScreen({ collezione, onAggiungi }: {
         params.set('sport', SPORT_FILTER_MAP[filtroSport] ?? filtroSport.toLowerCase())
       }
       const res = await apiFetch(`/cards/search?${params}`)
-      const mapped = res.data.map(mapCatalogCard)
-      
-      setRisultati(mapped)
+      setRisultati(res.data.map(mapCatalogCard))
     } catch (e) {
       console.error('Errore ricerca:', e)
     }
@@ -136,7 +135,7 @@ export function CercaScreen({ collezione, onAggiungi }: {
     if (!cartaSelezionata) return
     const prezzo = parseFloat(prezzoAcquisto.replace(',', '.'))
     if (isNaN(prezzo) || prezzo <= 0) {
-      Alert.alert('Prezzo non valido', 'Inserisci un prezzo di acquisto valido.')
+      onToast('Inserisci un prezzo di acquisto valido.', 'error')
       return
     }
     setAggiungendo(true)
@@ -201,7 +200,6 @@ export function CercaScreen({ collezione, onAggiungi }: {
             {cartaSelezionata && (
               <>
                 <Text style={styles.modalTitle}>Aggiungi alla collezione</Text>
-
                 <View style={styles.modalCartaInfo}>
                   {cartaSelezionata.imageUrl ? (
                     <Image source={{ uri: cartaSelezionata.imageUrl }} style={styles.modalCartaImage} resizeMode="contain" />
