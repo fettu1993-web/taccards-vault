@@ -108,6 +108,8 @@ export function CercaScreen({ collezione, onAggiungi, onToast }: {
   const [richiestaPlayer, setRichiestaPlayer] = useState('')
   const [richiestaSet, setRichiestaSet] = useState('')
   const [richiestaSport, setRichiestaSport] = useState('soccer')
+  const [richiestaParallel, setRichiestaParallel] = useState('')
+  const [richiestaAuto, setRichiestaAuto] = useState(false)
   const [richiestaNote, setRichiestaNote] = useState('')
   const [inviandoRichiesta, setInviandoRichiesta] = useState(false)
 
@@ -152,6 +154,15 @@ export function CercaScreen({ collezione, onAggiungi, onToast }: {
     setModalVisible(false)
   }
 
+  function resetRichiesta() {
+    setRichiestaPlayer('')
+    setRichiestaSet('')
+    setRichiestaSport('soccer')
+    setRichiestaParallel('')
+    setRichiestaAuto(false)
+    setRichiestaNote('')
+  }
+
   async function inviaRichiesta() {
     if (!richiestaPlayer.trim() || !richiestaSet.trim()) {
       onToast('Inserisci almeno il nome del giocatore e il set.', 'error')
@@ -159,20 +170,24 @@ export function CercaScreen({ collezione, onAggiungi, onToast }: {
     }
     setInviandoRichiesta(true)
     try {
+      const noteCompleta = [
+        richiestaAuto ? 'AUTO' : '',
+        richiestaNote.trim(),
+      ].filter(Boolean).join(' · ')
+
       await apiFetch('/card-requests', {
         method: 'POST',
         body: JSON.stringify({
           playerName: richiestaPlayer.trim(),
           setName: richiestaSet.trim(),
           sport: richiestaSport,
-          notes: richiestaNote.trim() || undefined,
+          parallel: richiestaParallel.trim() || undefined,
+          notes: noteCompleta || undefined,
         }),
       })
       onToast('✅ Richiesta inviata! La aggiungeremo presto.', 'success')
       setRichiestaVisible(false)
-      setRichiestaPlayer('')
-      setRichiestaSet('')
-      setRichiestaNote('')
+      resetRichiesta()
     } catch (e: any) {
       onToast(e.message || 'Errore durante l\'invio della richiesta.', 'error')
     }
@@ -311,7 +326,7 @@ export function CercaScreen({ collezione, onAggiungi, onToast }: {
             <Text style={styles.modalLabel}>Giocatore / Nome carta *</Text>
             <TextInput
               style={styles.modalInput}
-              placeholder="es. Giannis Antetokounmpo"
+              placeholder="es. Kylian Mbappé"
               placeholderTextColor="#888780"
               value={richiestaPlayer}
               onChangeText={setRichiestaPlayer}
@@ -320,7 +335,7 @@ export function CercaScreen({ collezione, onAggiungi, onToast }: {
             <Text style={styles.modalLabel}>Set / Collezione *</Text>
             <TextInput
               style={styles.modalInput}
-              placeholder="es. 2024-25 Panini Prizm NBA"
+              placeholder="es. 2024-25 Topps Chrome LaLiga"
               placeholderTextColor="#888780"
               value={richiestaSet}
               onChangeText={setRichiestaSet}
@@ -345,17 +360,35 @@ export function CercaScreen({ collezione, onAggiungi, onToast }: {
               ))}
             </ScrollView>
 
-            <Text style={styles.modalLabel}>Note (opzionale)</Text>
+            <Text style={styles.modalLabel}>Parallel / Numerata (opzionale)</Text>
             <TextInput
               style={[styles.modalInput, { fontSize: 14 }]}
-              placeholder="es. Rookie card, parallel Gold /10..."
+              placeholder="es. Gold /10, Prizm, Silver /25..."
+              placeholderTextColor="#888780"
+              value={richiestaParallel}
+              onChangeText={setRichiestaParallel}
+            />
+
+            <TouchableOpacity
+              style={[styles.autoToggle, richiestaAuto && styles.autoToggleAttivo]}
+              onPress={() => setRichiestaAuto(!richiestaAuto)}
+            >
+              <Text style={[styles.autoToggleText, richiestaAuto && styles.autoToggleTextAttivo]}>
+                {richiestaAuto ? '✓ Auto' : 'Auto'}
+              </Text>
+            </TouchableOpacity>
+
+            <Text style={[styles.modalLabel, { marginTop: 16 }]}>Note (opzionale)</Text>
+            <TextInput
+              style={[styles.modalInput, { fontSize: 14 }]}
+              placeholder="es. Rookie card, variante speciale..."
               placeholderTextColor="#888780"
               value={richiestaNote}
               onChangeText={setRichiestaNote}
             />
 
             <View style={styles.modalButtons}>
-              <TouchableOpacity style={styles.modalBtnAnnulla} onPress={() => setRichiestaVisible(false)} disabled={inviandoRichiesta}>
+              <TouchableOpacity style={styles.modalBtnAnnulla} onPress={() => { setRichiestaVisible(false); resetRichiesta() }} disabled={inviandoRichiesta}>
                 <Text style={styles.modalBtnAnnullaText}>Annulla</Text>
               </TouchableOpacity>
               <TouchableOpacity style={[styles.modalBtnAggiungi, inviandoRichiesta && { opacity: 0.6 }]} onPress={inviaRichiesta} disabled={inviandoRichiesta}>
@@ -398,6 +431,10 @@ const styles = StyleSheet.create({
   cardCurrentPrice: { fontSize: 16, fontWeight: '500', color: '#2C2C2A' },
   addBtn: { backgroundColor: '#EEEDFE', borderRadius: 6, paddingHorizontal: 8, paddingVertical: 4, marginTop: 4 },
   addBtnText: { color: '#534AB7', fontSize: 11, fontWeight: '500' },
+  autoToggle: { paddingHorizontal: 20, paddingVertical: 10, borderRadius: 20, backgroundColor: '#fff', borderWidth: 0.5, borderColor: '#D3D1C7', alignSelf: 'flex-start', marginBottom: 4 },
+  autoToggleAttivo: { backgroundColor: '#534AB7', borderColor: '#534AB7' },
+  autoToggleText: { fontSize: 14, fontWeight: '600', color: '#888780' },
+  autoToggleTextAttivo: { color: '#fff' },
   modalOverlay: { flex: 1, backgroundColor: 'rgba(0,0,0,0.5)', alignItems: 'center', justifyContent: 'center', padding: 24 },
   modalBox: { backgroundColor: '#fff', borderRadius: 16, padding: 24, width: '100%', maxWidth: 400 },
   modalTitle: { fontSize: 18, fontWeight: '500', color: '#2C2C2A', marginBottom: 16 },
