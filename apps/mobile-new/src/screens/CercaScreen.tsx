@@ -103,6 +103,14 @@ export function CercaScreen({ collezione, onAggiungi, onToast }: {
   const [gradeSelezionato, setGradeSelezionato] = useState<GradeValue>(DEFAULT_GRADE)
   const [aggiungendo, setAggiungendo] = useState(false)
 
+  // Richiesta carta
+  const [richiestaVisible, setRichiestaVisible] = useState(false)
+  const [richiestaPlayer, setRichiestaPlayer] = useState('')
+  const [richiestaSet, setRichiestaSet] = useState('')
+  const [richiestaSport, setRichiestaSport] = useState('soccer')
+  const [richiestaNote, setRichiestaNote] = useState('')
+  const [inviandoRichiesta, setInviandoRichiesta] = useState(false)
+
   useEffect(() => {
     const timeout = setTimeout(() => { loadCards() }, 300)
     return () => clearTimeout(timeout)
@@ -144,6 +152,33 @@ export function CercaScreen({ collezione, onAggiungi, onToast }: {
     setModalVisible(false)
   }
 
+  async function inviaRichiesta() {
+    if (!richiestaPlayer.trim() || !richiestaSet.trim()) {
+      onToast('Inserisci almeno il nome del giocatore e il set.', 'error')
+      return
+    }
+    setInviandoRichiesta(true)
+    try {
+      await apiFetch('/card-requests', {
+        method: 'POST',
+        body: JSON.stringify({
+          playerName: richiestaPlayer.trim(),
+          setName: richiestaSet.trim(),
+          sport: richiestaSport,
+          notes: richiestaNote.trim() || undefined,
+        }),
+      })
+      onToast('✅ Richiesta inviata! La aggiungeremo presto.', 'success')
+      setRichiestaVisible(false)
+      setRichiestaPlayer('')
+      setRichiestaSet('')
+      setRichiestaNote('')
+    } catch (e: any) {
+      onToast(e.message || 'Errore durante l\'invio della richiesta.', 'error')
+    }
+    setInviandoRichiesta(false)
+  }
+
   return (
     <ScrollView style={styles.screen} contentContainerStyle={styles.screenContent}>
       <Text style={styles.screenTitle}>Cerca carte</Text>
@@ -167,33 +202,51 @@ export function CercaScreen({ collezione, onAggiungi, onToast }: {
       {cercando && <ActivityIndicator color="#534AB7" style={{ marginTop: 20 }} />}
 
       {!cercando && risultati.length === 0 && (
-        <Text style={styles.emptyText}>Nessuna carta trovata</Text>
+        <View style={styles.emptyWrap}>
+          <Text style={styles.emptyText}>Nessuna carta trovata</Text>
+          {query.trim().length > 0 && (
+            <TouchableOpacity style={styles.richiestaBtn} onPress={() => {
+              setRichiestaPlayer(query.trim())
+              setRichiestaVisible(true)
+            }}>
+              <Text style={styles.richiestaBtnText}>Non trovi la carta? Segnalacela →</Text>
+            </TouchableOpacity>
+          )}
+        </View>
       )}
 
-      {!cercando && risultati.map((card) => (
-        <View key={card.id} style={styles.cardItem}>
-          {card.imageUrl ? (
-            <Image source={{ uri: card.imageUrl }} style={styles.cardImage} resizeMode="contain" />
-          ) : (
-            <View style={styles.cardIcon}>
-              <Text style={styles.cardIconText}>{card.sport}</Text>
+      {!cercando && risultati.length > 0 && (
+        <>
+          {risultati.map((card) => (
+            <View key={card.id} style={styles.cardItem}>
+              {card.imageUrl ? (
+                <Image source={{ uri: card.imageUrl }} style={styles.cardImage} resizeMode="contain" />
+              ) : (
+                <View style={styles.cardIcon}>
+                  <Text style={styles.cardIconText}>{card.sport}</Text>
+                </View>
+              )}
+              <View style={styles.cardInfo}>
+                <Text style={styles.cardPlayer}>{card.player}</Text>
+                <Text style={styles.cardSet}>{card.set}</Text>
+                {card.parallel ? <Text style={styles.cardParallel}>✨ {card.parallel}</Text> : null}
+                {card.grade ? <Text style={styles.cardGrade}>{card.grade}</Text> : null}
+              </View>
+              <View style={styles.cardPrices}>
+                <Text style={styles.cardCurrentPrice}>€{card.currentPrice}</Text>
+                <TouchableOpacity style={styles.addBtn} onPress={() => apriModal(card)}>
+                  <Text style={styles.addBtnText}>+ Aggiungi</Text>
+                </TouchableOpacity>
+              </View>
             </View>
-          )}
-          <View style={styles.cardInfo}>
-            <Text style={styles.cardPlayer}>{card.player}</Text>
-            <Text style={styles.cardSet}>{card.set}</Text>
-            {card.parallel ? <Text style={styles.cardParallel}>✨ {card.parallel}</Text> : null}
-            {card.grade ? <Text style={styles.cardGrade}>{card.grade}</Text> : null}
-          </View>
-          <View style={styles.cardPrices}>
-            <Text style={styles.cardCurrentPrice}>€{card.currentPrice}</Text>
-            <TouchableOpacity style={styles.addBtn} onPress={() => apriModal(card)}>
-              <Text style={styles.addBtnText}>+ Aggiungi</Text>
-            </TouchableOpacity>
-          </View>
-        </View>
-      ))}
+          ))}
+          <TouchableOpacity style={styles.richiestaBtn} onPress={() => setRichiestaVisible(true)}>
+            <Text style={styles.richiestaBtnText}>Non trovi la carta? Segnalacela →</Text>
+          </TouchableOpacity>
+        </>
+      )}
 
+      {/* Modal aggiunta carta */}
       <Modal visible={modalVisible} transparent animationType="fade">
         <View style={styles.modalOverlay}>
           <View style={styles.modalBox}>
@@ -245,6 +298,73 @@ export function CercaScreen({ collezione, onAggiungi, onToast }: {
           </View>
         </View>
       </Modal>
+
+      {/* Modal richiesta carta */}
+      <Modal visible={richiestaVisible} transparent animationType="fade">
+        <View style={styles.modalOverlay}>
+          <View style={styles.modalBox}>
+            <Text style={styles.modalTitle}>Segnala una carta</Text>
+            <Text style={[styles.modalHint, { marginBottom: 16 }]}>
+              Dicci quale carta stai cercando e la aggiungeremo al catalogo.
+            </Text>
+
+            <Text style={styles.modalLabel}>Giocatore / Nome carta *</Text>
+            <TextInput
+              style={styles.modalInput}
+              placeholder="es. Giannis Antetokounmpo"
+              placeholderTextColor="#888780"
+              value={richiestaPlayer}
+              onChangeText={setRichiestaPlayer}
+            />
+
+            <Text style={styles.modalLabel}>Set / Collezione *</Text>
+            <TextInput
+              style={styles.modalInput}
+              placeholder="es. 2024-25 Panini Prizm NBA"
+              placeholderTextColor="#888780"
+              value={richiestaSet}
+              onChangeText={setRichiestaSet}
+            />
+
+            <Text style={styles.modalLabel}>Sport</Text>
+            <ScrollView horizontal showsHorizontalScrollIndicator={false} style={{ marginBottom: 16 }}>
+              {[
+                { label: '⚽ Calcio', value: 'soccer' },
+                { label: '🏀 Basket', value: 'basketball' },
+                { label: '🏎 F1', value: 'f1' },
+                { label: '🎾 Tennis', value: 'tennis' },
+                { label: '⚾ Baseball', value: 'baseball' },
+              ].map((s) => (
+                <TouchableOpacity
+                  key={s.value}
+                  style={[styles.filtroBtn, richiestaSport === s.value && styles.filtroBtnAttivo, { marginRight: 8 }]}
+                  onPress={() => setRichiestaSport(s.value)}
+                >
+                  <Text style={[styles.filtroText, richiestaSport === s.value && styles.filtroTextAttivo]}>{s.label}</Text>
+                </TouchableOpacity>
+              ))}
+            </ScrollView>
+
+            <Text style={styles.modalLabel}>Note (opzionale)</Text>
+            <TextInput
+              style={[styles.modalInput, { fontSize: 14 }]}
+              placeholder="es. Rookie card, parallel Gold /10..."
+              placeholderTextColor="#888780"
+              value={richiestaNote}
+              onChangeText={setRichiestaNote}
+            />
+
+            <View style={styles.modalButtons}>
+              <TouchableOpacity style={styles.modalBtnAnnulla} onPress={() => setRichiestaVisible(false)} disabled={inviandoRichiesta}>
+                <Text style={styles.modalBtnAnnullaText}>Annulla</Text>
+              </TouchableOpacity>
+              <TouchableOpacity style={[styles.modalBtnAggiungi, inviandoRichiesta && { opacity: 0.6 }]} onPress={inviaRichiesta} disabled={inviandoRichiesta}>
+                {inviandoRichiesta ? <ActivityIndicator color="#fff" /> : <Text style={styles.modalBtnAggiungiText}>Invia</Text>}
+              </TouchableOpacity>
+            </View>
+          </View>
+        </View>
+      </Modal>
     </ScrollView>
   )
 }
@@ -261,7 +381,10 @@ const styles = StyleSheet.create({
   filtroBtnAttivo: { backgroundColor: '#534AB7', borderColor: '#534AB7' },
   filtroText: { fontSize: 13, color: '#888780' },
   filtroTextAttivo: { color: '#fff', fontWeight: '500' },
-  emptyText: { textAlign: 'center', color: '#888780', marginTop: 40, fontSize: 15 },
+  emptyWrap: { alignItems: 'center', marginTop: 40 },
+  emptyText: { color: '#888780', fontSize: 15, marginBottom: 16 },
+  richiestaBtn: { alignItems: 'center', padding: 16, marginTop: 8 },
+  richiestaBtnText: { color: '#534AB7', fontSize: 14, fontWeight: '500' },
   cardItem: { backgroundColor: '#fff', borderRadius: 12, padding: 16, borderWidth: 0.5, borderColor: '#D3D1C7', marginBottom: 8, flexDirection: 'row', alignItems: 'center' },
   cardImage: { width: 44, height: 60, borderRadius: 4, marginRight: 12, backgroundColor: '#F1EFE8' },
   cardIcon: { width: 44, height: 44, borderRadius: 22, backgroundColor: '#F1EFE8', alignItems: 'center', justifyContent: 'center', marginRight: 12 },

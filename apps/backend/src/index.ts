@@ -10,6 +10,7 @@ import { pricesRoutes } from './routes/prices'
 import { sealedRoutes } from './routes/sealed'
 import { scanRoutes } from './routes/scan'
 import { watchlistRoutes } from './routes/watchlist'
+import { cardRequestsRoutes } from './routes/cardRequests'
 
 const app = Fastify({ logger: true })
 
@@ -31,12 +32,13 @@ await app.register(rateLimit, {
 app.get('/health', async () => ({ status: 'ok', version: '0.1.0' }))
 
 // ── Routes ───────────────────────────────
-await app.register(cardsRoutes,      { prefix: '/api/v1/cards' })
-await app.register(collectionRoutes, { prefix: '/api/v1/collection' })
-await app.register(pricesRoutes,     { prefix: '/api/v1/prices' })
-await app.register(sealedRoutes,     { prefix: '/api/v1/sealed' })
-await app.register(scanRoutes,       { prefix: '/api/v1/scan' })
-await app.register(watchlistRoutes,  { prefix: '/api/v1/watchlist' })
+await app.register(cardsRoutes,        { prefix: '/api/v1/cards' })
+await app.register(collectionRoutes,   { prefix: '/api/v1/collection' })
+await app.register(pricesRoutes,       { prefix: '/api/v1/prices' })
+await app.register(sealedRoutes,       { prefix: '/api/v1/sealed' })
+await app.register(scanRoutes,         { prefix: '/api/v1/scan' })
+await app.register(watchlistRoutes,    { prefix: '/api/v1/watchlist' })
+await app.register(cardRequestsRoutes, { prefix: '/api/v1/card-requests' })
 
 // ── Start ────────────────────────────────
 try {
