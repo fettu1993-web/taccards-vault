@@ -1,3 +1,9 @@
+export interface PricePoint {
+  date: string
+  price: number
+  gradeLabel: string
+}
+
 export interface Carta {
   id: string
   cardId: string
@@ -10,6 +16,7 @@ export interface Carta {
   sport: string
   categoria: string
   imageUrl: string | null
+  priceHistory: PricePoint[]
 }
 
 export const SPORT_MAP: Record<string, { label: string; emoji: string }> = {
@@ -62,6 +69,11 @@ export function mapUserCard(uc: any): Carta {
     sport: sportInfo.emoji,
     categoria: sportInfo.label,
     imageUrl: uc.card.imageUrl ?? null,
+    priceHistory: priceHistory.map((p: any) => ({
+      date: p.saleDate ?? p.date ?? p.createdAt ?? '',
+      price: Number(p.price),
+      gradeLabel: p.gradeLabel,
+    })),
   }
 }
 
@@ -82,5 +94,6 @@ export function mapCatalogCard(card: any): Carta {
     sport: sportInfo.emoji,
     categoria: sportInfo.label,
     imageUrl: card.imageUrl ?? null,
+    priceHistory: [],
   }
 }

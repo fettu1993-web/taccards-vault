@@ -1,5 +1,6 @@
 import { View, Text, ScrollView, TouchableOpacity, StyleSheet, Image } from 'react-native'
 import { Carta } from '../types'
+import { PrezzoChart } from '../components/PrezzoChart'
 
 export function CartaDetailScreen({ carta, onBack, onRimuovi }: {
   carta: Carta
@@ -12,13 +13,15 @@ export function CartaDetailScreen({ carta, onBack, onRimuovi }: {
   const roiPos = roi ? Number(roi) >= 0 : true
   const guadagno = carta.currentPrice - carta.buyPrice
 
+  const gradeLabel = carta.grade === 'Raw' || !carta.grade ? 'raw' : carta.grade
+  
+
   return (
     <ScrollView style={styles.screen} contentContainerStyle={styles.content}>
       <TouchableOpacity style={styles.backBtn} onPress={onBack}>
         <Text style={styles.backText}>← Collezione</Text>
       </TouchableOpacity>
 
-      {/* Hero carta */}
       <View style={styles.heroCard}>
         {carta.imageUrl ? (
           <Image source={{ uri: carta.imageUrl }} style={styles.heroImage} resizeMode="contain" />
@@ -41,7 +44,6 @@ export function CartaDetailScreen({ carta, onBack, onRimuovi }: {
         </View>
       </View>
 
-      {/* Valore e ROI */}
       <View style={styles.section}>
         <Text style={styles.sectionTitle}>VALORE</Text>
         <View style={styles.valoreRow}>
@@ -59,7 +61,13 @@ export function CartaDetailScreen({ carta, onBack, onRimuovi }: {
         </View>
       </View>
 
-      {/* Investimento */}
+      {carta.priceHistory && carta.priceHistory.length > 0 && (
+        <View style={styles.section}>
+          <Text style={styles.sectionTitle}>STORICO PREZZI</Text>
+          <PrezzoChart points={carta.priceHistory} gradeLabel={gradeLabel} />
+        </View>
+      )}
+
       {carta.buyPrice > 0 && (
         <View style={styles.section}>
           <Text style={styles.sectionTitle}>INVESTIMENTO</Text>
@@ -78,7 +86,6 @@ export function CartaDetailScreen({ carta, onBack, onRimuovi }: {
         </View>
       )}
 
-      {/* Dettagli */}
       <View style={styles.section}>
         <Text style={styles.sectionTitle}>DETTAGLI</Text>
         <View style={styles.infoRow}>
@@ -101,7 +108,6 @@ export function CartaDetailScreen({ carta, onBack, onRimuovi }: {
         </View>
       </View>
 
-      {/* Rimuovi */}
       {onRimuovi && (
         <TouchableOpacity
           style={styles.removeBtn}
