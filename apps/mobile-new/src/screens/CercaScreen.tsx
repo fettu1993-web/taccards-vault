@@ -143,8 +143,7 @@ export function CercaScreen({ collezione, onAggiungi }: {
 
   async function confermaAggiungi() {
   if (!cartaSelezionata) return
-  console.log('grade selezionato:', gradeSelezionato.label)
-  console.log('carte in collezione:', collezione.map(c => ({ cardId: c.cardId, grade: c.grade })))
+  
   const prezzo = parseFloat(prezzoAcquisto.replace(',', '.'))
     if (isNaN(prezzo) || prezzo <= 0) {
       Alert.alert('Prezzo non valido', 'Inserisci un prezzo di acquisto valido.')
@@ -168,7 +167,7 @@ export function CercaScreen({ collezione, onAggiungi }: {
       </View>
 
       <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.filtriScroll}>
-        {['Tutti', 'Calcio', 'Basket', 'F1'].map((sport) => (
+        {['Tutti', 'Calcio', 'Basket', 'F1', 'Tennis'].map((sport) => (
           <TouchableOpacity key={sport}
             style={[styles.filtroBtn, filtroSport === sport && styles.filtroBtnAttivo]}
             onPress={() => setFiltroSport(sport)}>

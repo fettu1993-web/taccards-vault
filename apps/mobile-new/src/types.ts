@@ -19,6 +19,7 @@ export const SPORT_MAP: Record<string, { label: string; emoji: string }> = {
   football: { label: 'Football', emoji: '🏈' },
   pokemon: { label: 'Pokémon', emoji: '⚡' },
   onepiece: { label: 'One Piece', emoji: '🏴‍☠️' },
+  tennis: { label: 'Tennis', emoji: '🎾' },
 }
 
 export const SPORT_FILTER_MAP: Record<string, string> = {
@@ -27,6 +28,7 @@ export const SPORT_FILTER_MAP: Record<string, string> = {
   'F1': 'f1',
   'Baseball': 'baseball',
   'Football': 'football',
+  'Tennis': 'tennis',
 }
 
 // Costruisce il gradeLabel dal condition/company/value della userCard
