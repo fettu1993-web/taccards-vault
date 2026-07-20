@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react'
-import { View, Text, ActivityIndicator } from 'react-native'
+import { View, Text, ActivityIndicator, TouchableOpacity } from 'react-native'
 import AsyncStorage from '@react-native-async-storage/async-storage'
 import { supabase } from './src/lib/supabase'
 import { apiFetch } from './src/lib/api'
@@ -14,6 +14,9 @@ import { ScannerScreen } from './src/screens/ScannerScreen'
 import { SealedProductsScreen } from './src/screens/SealedProductsScreen'
 import { ProfiloScreen } from './src/screens/ProfiloScreen'
 import { CartaDetailScreen } from './src/screens/CartaDetailScreen'
+import { AdminScreen } from './src/screens/AdminScreen'
+
+const ADMIN_EMAIL = 'fettu1993@gmail.com'
 
 export default function App() {
   const [session, setSession] = useState<any>(null)
@@ -24,9 +27,11 @@ export default function App() {
   const [loadingCollection, setLoadingCollection] = useState(false)
   const [cartaDettaglio, setCartaDettaglio] = useState<Carta | null>(null)
   const [toast, setToast] = useState<ToastMessage | null>(null)
+  const [showAdmin, setShowAdmin] = useState(false)
 
   const user = session?.user
   const token = session?.access_token
+  const isAdmin = user?.email === ADMIN_EMAIL
 
   function showToast(text: string, type: 'success' | 'error') {
     setToast({ text, type })
@@ -120,6 +125,15 @@ export default function App() {
     }
   }
 
+  if (showAdmin && isAdmin) {
+    return (
+      <View style={{ flex: 1, backgroundColor: '#F1EFE8' }}>
+        <AdminScreen onBack={() => setShowAdmin(false)} />
+        <Toast message={toast} onHide={() => setToast(null)} />
+      </View>
+    )
+  }
+
   if (cartaDettaglio) {
     return (
       <View style={{ flex: 1, backgroundColor: '#F1EFE8' }}>
@@ -156,7 +170,12 @@ export default function App() {
       {activeTab === 'scanner' && <ScannerScreen />}
       {activeTab === 'sealed' && <SealedProductsScreen />}
       {activeTab === 'profilo' && (
-        <ProfiloScreen user={user} onLogout={handleLogout} carte={collezione} />
+        <ProfiloScreen
+          user={user}
+          onLogout={handleLogout}
+          carte={collezione}
+          onAdmin={isAdmin ? () => setShowAdmin(true) : undefined}
+        />
       )}
       <TabBar active={activeTab} onPress={setActiveTab} />
       <Toast message={toast} onHide={() => setToast(null)} />

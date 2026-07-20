@@ -1,87 +1,97 @@
 import { View, Text, ScrollView, TouchableOpacity, StyleSheet } from 'react-native'
 import { Carta } from '../types'
 
-export function ProfiloScreen({ user, onLogout, carte }: {
+interface ProfiloScreenProps {
   user: any
   onLogout: () => void
   carte: Carta[]
-}) {
-  const categorieStats = ['Calcio', 'Basket', 'F1', 'Baseball', 'Football'].map(cat => ({
-    nome: cat,
-    count: carte.filter(c => c.categoria === cat).length,
-  })).filter(s => s.count > 0)
+  onAdmin?: () => void
+}
+
+export function ProfiloScreen({ user, onLogout, carte, onAdmin }: ProfiloScreenProps) {
+  const totalValore = carte.reduce((sum, c) => sum + c.currentPrice, 0)
+  const totalInvestito = carte.reduce((sum, c) => sum + c.buyPrice, 0)
+  const guadagno = totalValore - totalInvestito
+  const roiPerc = totalInvestito > 0 ? ((guadagno / totalInvestito) * 100).toFixed(1) : null
+  const roiPos = guadagno >= 0
 
   return (
-    <ScrollView style={styles.screen} contentContainerStyle={styles.screenContent}>
-      <Text style={styles.screenTitle}>Profilo</Text>
-      <View style={styles.profileCard}>
-        <View style={styles.profileAvatar}>
-          <Text style={styles.profileAvatarText}>{user?.email?.[0]?.toUpperCase() ?? 'U'}</Text>
+    <ScrollView style={s.screen} contentContainerStyle={s.content}>
+      <Text style={s.title}>Profilo</Text>
+
+      <View style={s.avatarWrap}>
+        <View style={s.avatar}>
+          <Text style={s.avatarText}>{user?.email?.[0]?.toUpperCase() ?? '?'}</Text>
         </View>
-        <Text style={styles.profileEmail}>{user?.email}</Text>
-        <Text style={styles.profilePlan}>Piano Free</Text>
+        <Text style={s.email}>{user?.email}</Text>
       </View>
 
-      <View style={styles.statsRow}>
-        <View style={styles.statBox}>
-          <Text style={styles.statNum}>{carte.length}</Text>
-          <Text style={styles.statLabel}>Carte</Text>
+      <View style={s.section}>
+        <Text style={s.sectionTitle}>PORTFOLIO</Text>
+        <View style={s.statsGrid}>
+          <View style={s.statCard}>
+            <Text style={s.statLabel}>Carte</Text>
+            <Text style={s.statNum}>{carte.length}</Text>
+          </View>
+          <View style={s.statCard}>
+            <Text style={s.statLabel}>Valore totale</Text>
+            <Text style={s.statNum}>€{totalValore.toLocaleString('it-IT')}</Text>
+          </View>
+          <View style={s.statCard}>
+            <Text style={s.statLabel}>Investito</Text>
+            <Text style={s.statNum}>€{totalInvestito.toLocaleString('it-IT')}</Text>
+          </View>
+          <View style={s.statCard}>
+            <Text style={s.statLabel}>Guadagno</Text>
+            <Text style={[s.statNum, roiPos ? s.pos : s.neg]}>
+              {roiPos ? '+' : ''}€{guadagno.toLocaleString('it-IT')}
+            </Text>
+          </View>
         </View>
-        <View style={styles.statBox}>
-          <Text style={styles.statNum}>0</Text>
-          <Text style={styles.statLabel}>Sealed</Text>
-        </View>
-        <View style={styles.statBox}>
-          <Text style={styles.statNum}>0</Text>
-          <Text style={styles.statLabel}>Watchlist</Text>
-        </View>
+        {roiPerc && (
+          <View style={[s.roiBadge, roiPos ? s.roiPos : s.roiNeg]}>
+            <Text style={[s.roiText, roiPos ? s.pos : s.neg]}>
+              ROI {roiPos ? '+' : ''}{roiPerc}%
+            </Text>
+          </View>
+        )}
       </View>
 
-      {categorieStats.length > 0 && (
-        <View style={styles.menuCard}>
-          <Text style={[styles.menuItemText, { padding: 16, fontWeight: '500' }]}>Per categoria</Text>
-          {categorieStats.map((stat) => (
-            <View key={stat.nome} style={styles.menuItem}>
-              <Text style={styles.menuItemText}>{stat.nome}</Text>
-              <Text style={styles.statBadge}>{stat.count} carte</Text>
-            </View>
-          ))}
-        </View>
+      {onAdmin && (
+        <TouchableOpacity style={s.adminBtn} onPress={onAdmin}>
+          <Text style={s.adminBtnText}>⚙️ Admin — Richieste carte</Text>
+        </TouchableOpacity>
       )}
 
-      <View style={styles.menuCard}>
-        {['Prodotti sigillati', 'Watchlist prezzi', 'Impostazioni'].map((item) => (
-          <TouchableOpacity key={item} style={styles.menuItem}>
-            <Text style={styles.menuItemText}>{item}</Text>
-            <Text style={styles.menuItemArrow}>›</Text>
-          </TouchableOpacity>
-        ))}
-      </View>
-      <TouchableOpacity style={styles.btnLogout} onPress={onLogout}>
-        <Text style={styles.btnLogoutText}>Esci dall'account</Text>
+      <TouchableOpacity style={s.logoutBtn} onPress={onLogout}>
+        <Text style={s.logoutText}>Esci dall'account</Text>
       </TouchableOpacity>
     </ScrollView>
   )
 }
 
-const styles = StyleSheet.create({
+const s = StyleSheet.create({
   screen: { flex: 1, backgroundColor: '#F1EFE8' },
-  screenContent: { padding: 20, paddingBottom: 40 },
-  screenTitle: { fontSize: 24, fontWeight: '500', color: '#2C2C2A', marginTop: 40, marginBottom: 20 },
-  profileCard: { backgroundColor: '#fff', borderRadius: 12, padding: 24, alignItems: 'center', borderWidth: 0.5, borderColor: '#D3D1C7', marginBottom: 16 },
-  profileAvatar: { width: 72, height: 72, borderRadius: 36, backgroundColor: '#534AB7', alignItems: 'center', justifyContent: 'center', marginBottom: 12 },
-  profileAvatarText: { fontSize: 28, color: '#fff', fontWeight: '500' },
-  profileEmail: { fontSize: 16, color: '#2C2C2A', fontWeight: '500', marginBottom: 4 },
-  profilePlan: { fontSize: 13, color: '#888780' },
-  statsRow: { flexDirection: 'row', gap: 12, marginBottom: 16 },
-  statBox: { flex: 1, backgroundColor: '#fff', borderRadius: 12, padding: 16, alignItems: 'center', borderWidth: 0.5, borderColor: '#D3D1C7' },
-  statNum: { fontSize: 24, fontWeight: '500', color: '#534AB7' },
-  statLabel: { fontSize: 12, color: '#888780', marginTop: 2 },
-  statBadge: { fontSize: 13, color: '#534AB7', fontWeight: '500' },
-  menuCard: { backgroundColor: '#fff', borderRadius: 12, borderWidth: 0.5, borderColor: '#D3D1C7', marginBottom: 16, overflow: 'hidden' },
-  menuItem: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', padding: 16, borderBottomWidth: 0.5, borderBottomColor: '#D3D1C7' },
-  menuItemText: { fontSize: 15, color: '#2C2C2A' },
-  menuItemArrow: { fontSize: 20, color: '#888780' },
-  btnLogout: { borderRadius: 8, padding: 16, alignItems: 'center', borderWidth: 1, borderColor: '#E24B4A' },
-  btnLogoutText: { color: '#E24B4A', fontSize: 16, fontWeight: '500' },
+  content: { padding: 20, paddingBottom: 60 },
+  title: { fontSize: 24, fontWeight: '500', color: '#2C2C2A', marginTop: 52, marginBottom: 24 },
+  avatarWrap: { alignItems: 'center', marginBottom: 28 },
+  avatar: { width: 72, height: 72, borderRadius: 36, backgroundColor: '#534AB7', alignItems: 'center', justifyContent: 'center', marginBottom: 12 },
+  avatarText: { fontSize: 28, fontWeight: '700', color: '#fff' },
+  email: { fontSize: 15, color: '#888780' },
+  section: { backgroundColor: '#fff', borderRadius: 12, padding: 18, borderWidth: 0.5, borderColor: '#D3D1C7', marginBottom: 12 },
+  sectionTitle: { fontSize: 11, color: '#888780', fontWeight: '600', marginBottom: 14, letterSpacing: 0.8 },
+  statsGrid: { flexDirection: 'row', flexWrap: 'wrap', gap: 10 },
+  statCard: { flex: 1, minWidth: '45%', backgroundColor: '#F1EFE8', borderRadius: 10, padding: 12 },
+  statLabel: { fontSize: 11, color: '#888780', marginBottom: 4 },
+  statNum: { fontSize: 16, fontWeight: '600', color: '#2C2C2A' },
+  pos: { color: '#3B6D11' },
+  neg: { color: '#A32D2D' },
+  roiBadge: { marginTop: 12, borderRadius: 8, padding: 12, alignItems: 'center' },
+  roiPos: { backgroundColor: '#EAF3DE' },
+  roiNeg: { backgroundColor: '#FCEBEB' },
+  roiText: { fontSize: 16, fontWeight: '600' },
+  adminBtn: { backgroundColor: '#EEEDFE', borderRadius: 12, padding: 16, alignItems: 'center', marginBottom: 12, borderWidth: 0.5, borderColor: '#534AB7' },
+  adminBtnText: { color: '#534AB7', fontSize: 15, fontWeight: '500' },
+  logoutBtn: { backgroundColor: '#fff', borderRadius: 12, padding: 16, alignItems: 'center', borderWidth: 0.5, borderColor: '#D3D1C7' },
+  logoutText: { color: '#A32D2D', fontSize: 15, fontWeight: '500' },
 })

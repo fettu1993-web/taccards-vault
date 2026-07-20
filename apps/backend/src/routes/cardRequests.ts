@@ -11,6 +11,14 @@ const requestSchema = z.object({
   notes: z.string().max(500).optional(),
 })
 
+const ADMIN_EMAIL = process.env.ADMIN_EMAIL ?? 'fettu1993@gmail.com'
+
+async function requireAdmin(req: any, reply: any) {
+  if (req.user?.email !== ADMIN_EMAIL) {
+    return reply.status(403).send({ error: 'Non autorizzato' })
+  }
+}
+
 export async function cardRequestsRoutes(app: FastifyInstance) {
 
   // POST /api/v1/card-requests — invia richiesta carta
@@ -39,5 +47,32 @@ export async function cardRequestsRoutes(app: FastifyInstance) {
       ORDER BY created_at DESC
     `
     return reply.send({ data: requests })
+  })
+
+  // GET /api/v1/card-requests/admin — tutte le richieste (solo admin)
+  app.get('/admin', { preHandler: [authenticate, requireAdmin] }, async (req, reply) => {
+    const requests = await prisma.$queryRaw`
+      SELECT id, player_name, set_name, sport, parallel, notes, status, created_at,
+             user_id::text as user_email
+      FROM card_requests
+      ORDER BY created_at DESC
+    `
+    return reply.send({ data: requests })
+  })
+
+  // PATCH /api/v1/card-requests/:id/status — aggiorna stato (solo admin)
+  app.patch('/:id/status', { preHandler: [authenticate, requireAdmin] }, async (req, reply) => {
+    const { id } = req.params as { id: string }
+    const { status } = req.body as { status: string }
+
+    if (!['pending', 'added', 'rejected'].includes(status)) {
+      return reply.status(400).send({ error: 'Stato non valido' })
+    }
+
+    await prisma.$queryRaw`
+      UPDATE card_requests SET status = ${status} WHERE id = ${id}::uuid
+    `
+
+    return reply.send({ success: true })
   })
 }
