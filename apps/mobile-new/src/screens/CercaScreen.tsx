@@ -4,11 +4,11 @@ import { Carta, mapCatalogCard, SPORT_FILTER_MAP } from '../types'
 import { apiFetch } from '../lib/api'
 
 const GRADER_CONFIG = [
-  { company: null,    label: 'Raw',   valori: [] },
-  { company: 'psa',  label: 'PSA',   valori: ['10', '9', '8', '7', '6', '5', '4', '3', '2', '1'] },
-  { company: 'bgs',  label: 'BGS',   valori: ['10', '9.5', '9', '8.5', '8', '7.5', '7', '6.5', '6', '5.5', '5', '4.5', '4', '3.5', '3', '2.5', '2', '1.5', '1'] },
-  { company: 'cgc',  label: 'CGC',   valori: ['10', '9.5', '9', '8.5', '8', '7.5', '7', '6.5', '6', '5.5', '5', '4.5', '4', '3.5', '3', '2.5', '2', '1.5', '1'] },
-  { company: 'graad', label: 'GRAAD', valori: ['10', '9.5', '9', '8.5', '8', '7.5', '7', '6.5', '6', '5.5', '5', '4.5', '4', '3.5', '3', '2.5', '2', '1.5', '1'] },
+  { company: null,   label: 'Raw', valori: [] },
+  { company: 'psa',  label: 'PSA', valori: ['10', '9', '8', '7', '6', '5', '4', '3', '2', '1'] },
+  { company: 'bgs',  label: 'BGS', valori: ['10', '9.5', '9', '8.5', '8', '7.5', '7', '6.5', '6', '5.5', '5', '4.5', '4', '3.5', '3', '2.5', '2', '1.5', '1'] },
+  { company: 'cgc',  label: 'CGC', valori: ['10', '9.5', '9', '8.5', '8', '7.5', '7', '6.5', '6', '5.5', '5', '4.5', '4', '3.5', '3', '2.5', '2', '1.5', '1'] },
+  { company: 'sgc',  label: 'SGC', valori: ['10', '9', '8', '7', '6', '5', '4', '3', '2', '1'] },
 ]
 
 interface GradeValue {
