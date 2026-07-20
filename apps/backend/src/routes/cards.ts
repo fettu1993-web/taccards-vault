@@ -14,7 +14,6 @@ const searchSchema = z.object({
 
 export async function cardsRoutes(app: FastifyInstance) {
 
-  // GET /api/v1/cards/search?q=messi&sport=soccer
   app.get('/search', { preHandler: authenticate }, async (req, reply) => {
     const query = searchSchema.safeParse(req.query)
     if (!query.success) {
@@ -24,16 +23,25 @@ export async function cardsRoutes(app: FastifyInstance) {
     const { q, sport, year, manufacturer, page, limit } = query.data
     const skip = (page - 1) * limit
 
+    // Splitta la query in parole e cerca ognuna in tutti i campi
+    const buildSearchCondition = (term: string) => ({
+      OR: [
+        { playerName: { contains: term, mode: 'insensitive' as const } },
+        { name: { contains: term, mode: 'insensitive' as const } },
+        { setName: { contains: term, mode: 'insensitive' as const } },
+        { parallel: { contains: term, mode: 'insensitive' as const } },
+        { team: { contains: term, mode: 'insensitive' as const } },
+        { category: { contains: term, mode: 'insensitive' as const } },
+      ],
+    })
+
+    const searchConditions = q
+      ? q.trim().split(/\s+/).map(buildSearchCondition)
+      : []
+
     const where = {
       AND: [
-        q ? {
-          OR: [
-            { playerName: { contains: q, mode: 'insensitive' as const } },
-            { name: { contains: q, mode: 'insensitive' as const } },
-            { setName: { contains: q, mode: 'insensitive' as const } },
-            { parallel: { contains: q, mode: 'insensitive' as const } },
-          ],
-        } : {},
+        ...searchConditions,
         sport ? { sport } : {},
         year ? { year } : {},
         manufacturer ? { manufacturer: { contains: manufacturer, mode: 'insensitive' as const } } : {},
@@ -62,7 +70,6 @@ export async function cardsRoutes(app: FastifyInstance) {
     })
   })
 
-  // GET /api/v1/cards/:id
   app.get('/:id', { preHandler: authenticate }, async (req, reply) => {
     const { id } = req.params as { id: string }
     const card = await prisma.card.findUnique({
@@ -78,7 +85,6 @@ export async function cardsRoutes(app: FastifyInstance) {
     return reply.send(card)
   })
 
-  // GET /api/v1/cards/:id/price-chart?grade=PSA 10&days=90
   app.get('/:id/price-chart', { preHandler: authenticate }, async (req, reply) => {
     const { id } = req.params as { id: string }
     const { grade = 'raw', days = '90' } = req.query as Record<string, string>
