@@ -31,6 +31,7 @@ export async function cardsRoutes(app: FastifyInstance) {
             { playerName: { contains: q, mode: 'insensitive' as const } },
             { name: { contains: q, mode: 'insensitive' as const } },
             { setName: { contains: q, mode: 'insensitive' as const } },
+            { parallel: { contains: q, mode: 'insensitive' as const } },
           ],
         } : {},
         sport ? { sport } : {},
