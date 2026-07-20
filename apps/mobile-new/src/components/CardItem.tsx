@@ -17,13 +17,8 @@ export function CardItem({ card, onRimuovi, onPress }: {
       onPress={() => onPress?.(card)}
       activeOpacity={onPress ? 0.7 : 1}
     >
-      {/* Immagine o emoji fallback */}
       {card.imageUrl ? (
-        <Image
-          source={{ uri: card.imageUrl }}
-          style={styles.cardImage}
-          resizeMode="contain"
-        />
+        <Image source={{ uri: card.imageUrl }} style={styles.cardImage} resizeMode="contain" />
       ) : (
         <View style={styles.cardIcon}>
           <Text style={styles.cardIconText}>{card.sport}</Text>
@@ -33,6 +28,9 @@ export function CardItem({ card, onRimuovi, onPress }: {
       <View style={styles.cardInfo}>
         <Text style={styles.cardPlayer}>{card.player}</Text>
         <Text style={styles.cardSet}>{card.set}</Text>
+        {card.parallel ? (
+          <Text style={styles.cardParallel}>✨ {card.parallel}</Text>
+        ) : null}
         {card.grade ? <Text style={styles.cardGrade}>{card.grade}</Text> : null}
       </View>
       <View style={styles.cardPrices}>
@@ -63,6 +61,7 @@ const styles = StyleSheet.create({
   cardInfo: { flex: 1 },
   cardPlayer: { fontSize: 14, fontWeight: '500', color: '#2C2C2A' },
   cardSet: { fontSize: 12, color: '#888780', marginTop: 2 },
+  cardParallel: { fontSize: 11, color: '#B8860B', marginTop: 3, fontWeight: '600' },
   cardGrade: { fontSize: 11, color: '#534AB7', marginTop: 3, fontWeight: '500' },
   cardPrices: { alignItems: 'flex-end' },
   cardCurrentPrice: { fontSize: 16, fontWeight: '500', color: '#2C2C2A' },

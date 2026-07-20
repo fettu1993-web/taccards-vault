@@ -41,14 +41,8 @@ function GradeSelector({ value, onChange }: { value: GradeValue, onChange: (g: G
           const isAttivo = isRaw ? value.label === 'Raw' : value.company === g.company
           const isOpen = aperto === g.label
           return (
-            <TouchableOpacity
-              key={g.label}
-              style={[gs.btn, isAttivo && gs.btnAttivo]}
-              onPress={() => {
-                if (isRaw) { selezionaRaw(); return }
-                setAperto(isOpen ? null : g.label)
-              }}
-            >
+            <TouchableOpacity key={g.label} style={[gs.btn, isAttivo && gs.btnAttivo]}
+              onPress={() => { if (isRaw) { selezionaRaw(); return } setAperto(isOpen ? null : g.label) }}>
               <Text style={[gs.btnText, isAttivo && gs.btnTextAttivo]}>
                 {g.label}{!isRaw ? (isOpen ? ' ▲' : ' ▼') : ''}
               </Text>
@@ -62,14 +56,9 @@ function GradeSelector({ value, onChange }: { value: GradeValue, onChange: (g: G
           {g.valori.map((voto) => {
             const isSelezionato = value.company === g.company && value.value === voto
             return (
-              <TouchableOpacity
-                key={voto}
-                style={[gs.votoBtn, isSelezionato && gs.votoBtnAttivo]}
-                onPress={() => selezionaVoto(g.company!, voto)}
-              >
-                <Text style={[gs.votoText, isSelezionato && gs.votoTextAttivo]}>
-                  {g.label.toUpperCase()} {voto}
-                </Text>
+              <TouchableOpacity key={voto} style={[gs.votoBtn, isSelezionato && gs.votoBtnAttivo]}
+                onPress={() => selezionaVoto(g.company!, voto)}>
+                <Text style={[gs.votoText, isSelezionato && gs.votoTextAttivo]}>{g.label.toUpperCase()} {voto}</Text>
               </TouchableOpacity>
             )
           })}
@@ -127,7 +116,9 @@ export function CercaScreen({ collezione, onAggiungi }: {
         params.set('sport', SPORT_FILTER_MAP[filtroSport] ?? filtroSport.toLowerCase())
       }
       const res = await apiFetch(`/cards/search?${params}`)
-      setRisultati(res.data.map(mapCatalogCard))
+      const mapped = res.data.map(mapCatalogCard)
+      
+      setRisultati(mapped)
     } catch (e) {
       console.error('Errore ricerca:', e)
     }
@@ -142,14 +133,12 @@ export function CercaScreen({ collezione, onAggiungi }: {
   }
 
   async function confermaAggiungi() {
-  if (!cartaSelezionata) return
-  
-  const prezzo = parseFloat(prezzoAcquisto.replace(',', '.'))
+    if (!cartaSelezionata) return
+    const prezzo = parseFloat(prezzoAcquisto.replace(',', '.'))
     if (isNaN(prezzo) || prezzo <= 0) {
       Alert.alert('Prezzo non valido', 'Inserisci un prezzo di acquisto valido.')
       return
     }
-  
     setAggiungendo(true)
     await onAggiungi(cartaSelezionata, prezzo, gradeSelezionato.condition, gradeSelezionato.company, gradeSelezionato.value)
     setAggiungendo(false)
@@ -162,7 +151,7 @@ export function CercaScreen({ collezione, onAggiungi }: {
 
       <View style={styles.searchBox}>
         <Text style={styles.searchIcon}>🔍</Text>
-        <TextInput style={styles.searchInput} placeholder="Cerca giocatore, set, anno..."
+        <TextInput style={styles.searchInput} placeholder="Cerca giocatore, set, parallel..."
           placeholderTextColor="#888780" value={query} onChangeText={setQuery} />
       </View>
 
@@ -194,13 +183,12 @@ export function CercaScreen({ collezione, onAggiungi }: {
           <View style={styles.cardInfo}>
             <Text style={styles.cardPlayer}>{card.player}</Text>
             <Text style={styles.cardSet}>{card.set}</Text>
+            {card.parallel ? <Text style={styles.cardParallel}>✨ {card.parallel}</Text> : null}
             {card.grade ? <Text style={styles.cardGrade}>{card.grade}</Text> : null}
           </View>
           <View style={styles.cardPrices}>
             <Text style={styles.cardCurrentPrice}>€{card.currentPrice}</Text>
-            <TouchableOpacity
-              style={styles.addBtn}
-              onPress={() => apriModal(card)}>
+            <TouchableOpacity style={styles.addBtn} onPress={() => apriModal(card)}>
               <Text style={styles.addBtnText}>+ Aggiungi</Text>
             </TouchableOpacity>
           </View>
@@ -220,9 +208,12 @@ export function CercaScreen({ collezione, onAggiungi }: {
                   ) : (
                     <Text style={styles.modalCartaSport}>{cartaSelezionata.sport}</Text>
                   )}
-                  <View>
+                  <View style={{ flex: 1 }}>
                     <Text style={styles.modalCartaPlayer}>{cartaSelezionata.player}</Text>
                     <Text style={styles.modalCartaSet}>{cartaSelezionata.set}</Text>
+                    {cartaSelezionata.parallel ? (
+                      <Text style={styles.modalCartaParallel}>✨ {cartaSelezionata.parallel}</Text>
+                    ) : null}
                   </View>
                 </View>
 
@@ -248,9 +239,7 @@ export function CercaScreen({ collezione, onAggiungi }: {
                     <Text style={styles.modalBtnAnnullaText}>Annulla</Text>
                   </TouchableOpacity>
                   <TouchableOpacity style={[styles.modalBtnAggiungi, aggiungendo && { opacity: 0.6 }]} onPress={confermaAggiungi} disabled={aggiungendo}>
-                    {aggiungendo
-                      ? <ActivityIndicator color="#fff" />
-                      : <Text style={styles.modalBtnAggiungiText}>Aggiungi</Text>}
+                    {aggiungendo ? <ActivityIndicator color="#fff" /> : <Text style={styles.modalBtnAggiungiText}>Aggiungi</Text>}
                   </TouchableOpacity>
                 </View>
               </>
@@ -282,6 +271,7 @@ const styles = StyleSheet.create({
   cardInfo: { flex: 1 },
   cardPlayer: { fontSize: 14, fontWeight: '500', color: '#2C2C2A' },
   cardSet: { fontSize: 12, color: '#888780', marginTop: 2 },
+  cardParallel: { fontSize: 11, color: '#B8860B', marginTop: 3, fontWeight: '600' },
   cardGrade: { fontSize: 11, color: '#534AB7', marginTop: 3, fontWeight: '500' },
   cardPrices: { alignItems: 'flex-end' },
   cardCurrentPrice: { fontSize: 16, fontWeight: '500', color: '#2C2C2A' },
@@ -295,6 +285,7 @@ const styles = StyleSheet.create({
   modalCartaSport: { fontSize: 28 },
   modalCartaPlayer: { fontSize: 14, fontWeight: '500', color: '#2C2C2A' },
   modalCartaSet: { fontSize: 12, color: '#888780', marginTop: 2 },
+  modalCartaParallel: { fontSize: 11, color: '#B8860B', marginTop: 3, fontWeight: '600' },
   modalLabel: { fontSize: 13, color: '#888780', marginBottom: 8 },
   modalInput: { backgroundColor: '#F1EFE8', borderRadius: 8, padding: 14, fontSize: 20, color: '#2C2C2A', borderWidth: 0.5, borderColor: '#D3D1C7', marginBottom: 8 },
   modalHint: { fontSize: 12, color: '#888780', marginBottom: 20 },

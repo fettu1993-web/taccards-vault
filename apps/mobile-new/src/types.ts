@@ -3,6 +3,7 @@ export interface Carta {
   cardId: string
   player: string
   set: string
+  parallel: string | null
   grade: string
   buyPrice: number
   currentPrice: number
@@ -31,7 +32,6 @@ export const SPORT_FILTER_MAP: Record<string, string> = {
   'Tennis': 'tennis',
 }
 
-// Costruisce il gradeLabel dal condition/company/value della userCard
 function buildGradeLabel(condition: string, gradeCompany: string | null, gradeValue: string | null): string {
   if (condition === 'raw' || !gradeCompany) return 'raw'
   return `${gradeCompany.toUpperCase()} ${gradeValue ?? ''}`.trim()
@@ -39,11 +39,7 @@ function buildGradeLabel(condition: string, gradeCompany: string | null, gradeVa
 
 export function mapUserCard(uc: any): Carta {
   const sportInfo = SPORT_MAP[uc.card.sport] ?? { label: uc.card.sport, emoji: '🃏' }
-
-  // Costruisci il gradeLabel corretto per questa carta
   const gradeLabel = buildGradeLabel(uc.condition, uc.gradeCompany, uc.gradeValue)
-
-  // Cerca il prezzo corrispondente al grade specifico
   const priceHistory = uc.card.priceHistory ?? []
   const gradePrice = priceHistory.find((p: any) => p.gradeLabel === gradeLabel)
   const rawPrice = priceHistory.find((p: any) => p.gradeLabel === 'raw')
@@ -59,6 +55,7 @@ export function mapUserCard(uc: any): Carta {
     cardId: uc.cardId,
     player: uc.card.playerName ?? uc.card.name,
     set: uc.card.setName,
+    parallel: uc.card.parallel ?? null,
     grade,
     buyPrice: Number(uc.purchasePrice ?? 0),
     currentPrice: Number(latestPrice),
@@ -78,6 +75,7 @@ export function mapCatalogCard(card: any): Carta {
     cardId: card.id,
     player: card.playerName ?? card.name,
     set: card.setName,
+    parallel: card.parallel ?? null,
     grade: card.isRookie ? 'RC' : '',
     buyPrice: 0,
     currentPrice: Number(latestPrice),

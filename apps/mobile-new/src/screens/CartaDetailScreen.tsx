@@ -1,4 +1,4 @@
-import { View, Text, ScrollView, TouchableOpacity, StyleSheet, Alert, Image } from 'react-native'
+import { View, Text, ScrollView, TouchableOpacity, StyleSheet, Image } from 'react-native'
 import { Carta } from '../types'
 
 export function CartaDetailScreen({ carta, onBack, onRimuovi }: {
@@ -14,7 +14,6 @@ export function CartaDetailScreen({ carta, onBack, onRimuovi }: {
 
   return (
     <ScrollView style={styles.screen} contentContainerStyle={styles.content}>
-      {/* Header con back */}
       <TouchableOpacity style={styles.backBtn} onPress={onBack}>
         <Text style={styles.backText}>← Collezione</Text>
       </TouchableOpacity>
@@ -22,21 +21,24 @@ export function CartaDetailScreen({ carta, onBack, onRimuovi }: {
       {/* Hero carta */}
       <View style={styles.heroCard}>
         {carta.imageUrl ? (
-          <Image
-            source={{ uri: carta.imageUrl }}
-            style={styles.heroImage}
-            resizeMode="contain"
-          />
+          <Image source={{ uri: carta.imageUrl }} style={styles.heroImage} resizeMode="contain" />
         ) : (
           <Text style={styles.heroEmoji}>{carta.sport}</Text>
         )}
         <Text style={styles.heroPlayer}>{carta.player}</Text>
         <Text style={styles.heroSet}>{carta.set}</Text>
-        {carta.grade ? (
-          <View style={styles.gradeBadge}>
-            <Text style={styles.gradeText}>{carta.grade}</Text>
-          </View>
-        ) : null}
+        <View style={styles.badgeRow}>
+          {carta.parallel ? (
+            <View style={styles.parallelBadge}>
+              <Text style={styles.parallelText}>✨ {carta.parallel}</Text>
+            </View>
+          ) : null}
+          {carta.grade ? (
+            <View style={styles.gradeBadge}>
+              <Text style={styles.gradeText}>{carta.grade}</Text>
+            </View>
+          ) : null}
+        </View>
       </View>
 
       {/* Valore e ROI */}
@@ -57,7 +59,7 @@ export function CartaDetailScreen({ carta, onBack, onRimuovi }: {
         </View>
       </View>
 
-      {/* Dettagli investimento */}
+      {/* Investimento */}
       {carta.buyPrice > 0 && (
         <View style={styles.section}>
           <Text style={styles.sectionTitle}>INVESTIMENTO</Text>
@@ -76,7 +78,7 @@ export function CartaDetailScreen({ carta, onBack, onRimuovi }: {
         </View>
       )}
 
-      {/* Info carta */}
+      {/* Dettagli */}
       <View style={styles.section}>
         <Text style={styles.sectionTitle}>DETTAGLI</Text>
         <View style={styles.infoRow}>
@@ -87,25 +89,31 @@ export function CartaDetailScreen({ carta, onBack, onRimuovi }: {
           <Text style={styles.infoLabel}>Set</Text>
           <Text style={styles.infoValue}>{carta.set}</Text>
         </View>
+        {carta.parallel ? (
+          <View style={styles.infoRow}>
+            <Text style={styles.infoLabel}>Variante</Text>
+            <Text style={[styles.infoValue, { color: '#B8860B' }]}>✨ {carta.parallel}</Text>
+          </View>
+        ) : null}
         <View style={styles.infoRow}>
           <Text style={styles.infoLabel}>Condizione</Text>
           <Text style={styles.infoValue}>{carta.grade || 'Raw'}</Text>
         </View>
       </View>
 
-      {/* Pulsante rimuovi */}
-{onRimuovi && (
-  <TouchableOpacity
-    style={styles.removeBtn}
-    onPress={() => {
-      if (window.confirm(`Rimuovere ${carta.player} dalla collezione?`)) {
-        onRimuovi(carta.id)
-      }
-    }}
-  >
-    <Text style={styles.removeBtnText}>🗑 Rimuovi dalla collezione</Text>
-  </TouchableOpacity>
-)}
+      {/* Rimuovi */}
+      {onRimuovi && (
+        <TouchableOpacity
+          style={styles.removeBtn}
+          onPress={() => {
+            if (window.confirm(`Rimuovere ${carta.player} dalla collezione?`)) {
+              onRimuovi(carta.id)
+            }
+          }}
+        >
+          <Text style={styles.removeBtnText}>🗑 Rimuovi dalla collezione</Text>
+        </TouchableOpacity>
+      )}
     </ScrollView>
   )
 }
@@ -119,8 +127,11 @@ const styles = StyleSheet.create({
   heroImage: { width: 160, height: 220, borderRadius: 8, marginBottom: 16 },
   heroEmoji: { fontSize: 48, marginBottom: 12 },
   heroPlayer: { fontSize: 22, fontWeight: '600', color: '#2C2C2A', textAlign: 'center', marginBottom: 6 },
-  heroSet: { fontSize: 14, color: '#888780', textAlign: 'center' },
-  gradeBadge: { marginTop: 12, backgroundColor: '#EEEDFE', borderRadius: 20, paddingHorizontal: 14, paddingVertical: 5 },
+  heroSet: { fontSize: 14, color: '#888780', textAlign: 'center', marginBottom: 10 },
+  badgeRow: { flexDirection: 'row', gap: 8, flexWrap: 'wrap', justifyContent: 'center' },
+  parallelBadge: { backgroundColor: '#FFF8E1', borderRadius: 20, paddingHorizontal: 14, paddingVertical: 5, borderWidth: 0.5, borderColor: '#B8860B' },
+  parallelText: { color: '#B8860B', fontSize: 13, fontWeight: '600' },
+  gradeBadge: { backgroundColor: '#EEEDFE', borderRadius: 20, paddingHorizontal: 14, paddingVertical: 5 },
   gradeText: { color: '#534AB7', fontSize: 13, fontWeight: '600' },
   section: { backgroundColor: '#fff', borderRadius: 12, padding: 18, borderWidth: 0.5, borderColor: '#D3D1C7', marginBottom: 12 },
   sectionTitle: { fontSize: 11, color: '#888780', fontWeight: '600', marginBottom: 14, letterSpacing: 0.8 },
