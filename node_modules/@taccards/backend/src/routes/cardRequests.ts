@@ -75,4 +75,50 @@ export async function cardRequestsRoutes(app: FastifyInstance) {
 
     return reply.send({ success: true })
   })
+
+  // POST /api/v1/card-requests/:id/approve — aggiunge carta al catalogo (solo admin)
+  app.post('/:id/approve', { preHandler: [authenticate, requireAdmin] }, async (req, reply) => {
+    const { id } = req.params as { id: string }
+    const body = req.body as {
+      playerName: string
+      setName: string
+      sport: string
+      team?: string
+      year?: number
+      parallel?: string
+      isRookie?: boolean
+      isAutograph?: boolean
+      isNumbered?: boolean
+      printRun?: number
+      manufacturer?: string
+      category?: string
+    }
+
+    const card = await prisma.$queryRaw`
+      INSERT INTO cards (name, player_name, sport, set_name, team, year, parallel, is_rookie, is_autograph, is_numbered, print_run, manufacturer, category, data_source)
+      VALUES (
+        ${body.playerName + ' ' + body.setName},
+        ${body.playerName},
+        ${body.sport},
+        ${body.setName},
+        ${body.team ?? null},
+        ${body.year ?? null},
+        ${body.parallel ?? null},
+        ${body.isRookie ?? false},
+        ${body.isAutograph ?? false},
+        ${body.isNumbered ?? false},
+        ${body.printRun ?? null},
+        ${body.manufacturer ?? null},
+        ${body.category ?? null},
+        'manual'
+      )
+      RETURNING *
+    `
+
+    await prisma.$queryRaw`
+      UPDATE card_requests SET status = 'added' WHERE id = ${id}::uuid
+    `
+
+    return reply.status(201).send({ data: card })
+  })
 }
