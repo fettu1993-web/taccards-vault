@@ -15,6 +15,7 @@ import { SealedProductsScreen } from './src/screens/SealedProductsScreen'
 import { ProfiloScreen } from './src/screens/ProfiloScreen'
 import { CartaDetailScreen } from './src/screens/CartaDetailScreen'
 import { AdminScreen } from './src/screens/AdminScreen'
+import { WatchlistScreen } from './src/screens/WatchlistScreen'
 
 const ADMIN_EMAIL = 'fettu1993@gmail.com'
 
@@ -137,9 +138,10 @@ export default function App() {
   if (cartaDettaglio) {
     return (
       <View style={{ flex: 1, backgroundColor: '#F1EFE8' }}>
-        <CartaDetailScreen
+      <CartaDetailScreen
           carta={cartaDettaglio}
           onBack={() => setCartaDettaglio(null)}
+          onToast={showToast}
           onRimuovi={(id) => {
             handleRimuovi(id)
             setCartaDettaglio(null)
@@ -169,6 +171,9 @@ export default function App() {
       )}
       {activeTab === 'scanner' && <ScannerScreen />}
       {activeTab === 'sealed' && <SealedProductsScreen />}
+      {activeTab === 'watchlist' && (
+        <WatchlistScreen onToast={showToast} />
+      )}
       {activeTab === 'profilo' && (
         <ProfiloScreen
           user={user}

@@ -5,12 +5,12 @@ import { apiFetch } from '../lib/api'
 interface WatchlistItem {
   id: string
   cardId: string
-  targetPrice: number | null
+  targetPrice: string | number | null
   card: {
     playerName: string
     setName: string
     parallel: string | null
-    priceHistory: { price: number }[]
+    priceHistory: { price: string | number }[]
   }
 }
 
@@ -72,9 +72,12 @@ export function WatchlistScreen({ onToast }: { onToast: (text: string, type: 'su
         </View>
       ) : (
         items.map(item => {
-          const currentPrice = item.card.priceHistory?.[0]?.price ?? null
-          const diff = currentPrice != null && item.targetPrice != null
-            ? currentPrice - item.targetPrice
+          const currentPrice = item.card.priceHistory?.[0]?.price != null
+            ? parseFloat(item.card.priceHistory[0].price as any)
+            : null
+          const targetPrice = item.targetPrice != null ? parseFloat(item.targetPrice as any) : null
+          const diff = currentPrice != null && targetPrice != null
+            ? currentPrice - targetPrice
             : null
           const reached = diff != null && diff >= 0
 
@@ -100,7 +103,7 @@ export function WatchlistScreen({ onToast }: { onToast: (text: string, type: 'su
                 <View style={s.priceBox}>
                   <Text style={s.priceLabel}>Target</Text>
                   <Text style={s.priceValue}>
-                    {item.targetPrice != null ? `€${item.targetPrice.toLocaleString('it-IT')}` : '—'}
+                    {targetPrice != null ? `€${targetPrice.toLocaleString('it-IT')}` : '—'}
                   </Text>
                 </View>
               </View>
