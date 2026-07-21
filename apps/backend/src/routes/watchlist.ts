@@ -34,9 +34,16 @@ export async function watchlistRoutes(app: FastifyInstance) {
     if (!body.success) return reply.status(400).send({ error: body.error.flatten() })
 
     const item = await prisma.watchlist.upsert({
-      where: { userId_cardId: { userId: user.id, cardId: body.data.cardId } },
+      where: { userId_cardId: { userId: user.id as string, cardId: body.data.cardId as string } },
       update: { ...body.data, isActive: true },
-      create: { userId: user.id, ...body.data },
+      create: {
+        user: { connect: { id: user.id as string } },
+        card: { connect: { id: body.data.cardId as string } },
+        targetPrice: body.data.targetPrice,
+        notifyAbove: body.data.notifyAbove,
+        notifyBelow: body.data.notifyBelow,
+        gradeLabel: body.data.gradeLabel,
+      },
       include: { card: true },
     })
 

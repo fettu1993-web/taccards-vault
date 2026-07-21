@@ -19,7 +19,6 @@ const addSealedSchema = z.object({
 
 export async function sealedRoutes(app: FastifyInstance) {
 
-  // GET /api/v1/sealed — lista prodotti sigillati
   app.get('/', { preHandler: authenticate }, async (req, reply) => {
     const user = (req as any).user
 
@@ -32,12 +31,10 @@ export async function sealedRoutes(app: FastifyInstance) {
     })
 
     const totalInvested = products.reduce(
-      (sum, p) => sum + Number(p.purchasePrice) * p.quantity,
-      0
+      (sum, p) => sum + Number(p.purchasePrice) * p.quantity, 0
     )
     const totalCurrentValue = products.reduce(
-      (sum, p) => sum + Number(p.currentValue ?? p.purchasePrice) * p.quantity,
-      0
+      (sum, p) => sum + Number(p.currentValue ?? p.purchasePrice) * p.quantity, 0
     )
 
     return reply.send({
@@ -53,23 +50,32 @@ export async function sealedRoutes(app: FastifyInstance) {
     })
   })
 
-  // POST /api/v1/sealed — aggiungi prodotto sigillato
   app.post('/', { preHandler: authenticate }, async (req, reply) => {
     const user = (req as any).user
     const body = addSealedSchema.safeParse(req.body)
     if (!body.success) return reply.status(400).send({ error: body.error.flatten() })
 
-    const product = await prisma.sealedProduct.create({
+    const d = body.data
+    const product = await (prisma.sealedProduct.create as any)({
       data: {
         userId: user.id,
-        ...body.data,
-        purchaseDate: new Date(body.data.purchaseDate),
+        name: d.name,
+        category: d.category,
+        productType: d.productType,
+        manufacturer: d.manufacturer,
+        year: d.year,
+        setName: d.setName,
+        quantity: d.quantity,
+        purchasePrice: d.purchasePrice,
+        purchaseDate: new Date(d.purchaseDate),
+        purchasePlatform: d.purchasePlatform,
+        notes: d.notes,
       },
     })
 
     return reply.status(201).send(product)
   })
-// PATCH /api/v1/sealed/:id — aggiorna status o currentValue
+
   app.patch('/:id', { preHandler: authenticate }, async (req, reply) => {
     const user = (req as any).user
     const { id } = req.params as { id: string }
@@ -87,7 +93,6 @@ export async function sealedRoutes(app: FastifyInstance) {
     return reply.send(updated)
   })
 
-  // DELETE /api/v1/sealed/:id
   app.delete('/:id', { preHandler: authenticate }, async (req, reply) => {
     const user = (req as any).user
     const { id } = req.params as { id: string }
