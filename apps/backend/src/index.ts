@@ -17,7 +17,13 @@ const app = Fastify({ logger: true })
 async function main() {
   // ── Plugins ──────────────────────────────
   await app.register(cors, {
-    origin: process.env.ALLOWED_ORIGINS?.split(',') ?? ['http://localhost:8081'],
+    origin: process.env.ALLOWED_ORIGINS?.split(',') ?? [
+      'http://localhost:8081',
+      'http://localhost:8082',
+      'http://localhost:8083',
+      'http://localhost:8084',
+      'http://localhost:8085',
+    ],
   })
 
   await app.register(jwt, {
