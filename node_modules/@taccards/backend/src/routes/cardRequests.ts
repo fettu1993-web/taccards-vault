@@ -96,26 +96,27 @@ export async function cardRequestsRoutes(app: FastifyInstance) {
     const category = b.category ?? null
 
     const card = await prisma.$queryRaw`
-      INSERT INTO cards (id, name, player_name, sport, set_name, team, year, parallel, is_rookie, is_autograph, is_numbered, print_run, manufacturer, category, data_source)
-      VALUES (
-        gen_random_uuid(),
-        ${name},
-        ${b.playerName},
-        ${b.sport},
-        ${b.setName},
-        ${team},
-        ${year},
-        ${parallel},
-        ${isRookie},
-        ${isAutograph},
-        ${isNumbered},
-        ${printRun},
-        ${manufacturer},
-        ${category},
-        'manual'
-      )
-      RETURNING *
-    `
+  INSERT INTO cards (id, name, player_name, sport, set_name, team, year, parallel, is_rookie, is_autograph, is_numbered, print_run, manufacturer, category, data_source, updated_at)
+  VALUES (
+    gen_random_uuid(),
+    ${name},
+    ${b.playerName},
+    ${b.sport},
+    ${b.setName},
+    ${team},
+    ${year},
+    ${parallel},
+    ${isRookie},
+    ${isAutograph},
+    ${isNumbered},
+    ${printRun},
+    ${manufacturer},
+    ${category ?? b.sport},
+    'manual',
+    NOW()
+  )
+  RETURNING *
+`
 
     await prisma.$queryRaw`
       UPDATE card_requests SET status = 'added' WHERE id = ${id}::uuid
