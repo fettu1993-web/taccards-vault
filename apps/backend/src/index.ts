@@ -13,16 +13,10 @@ import { watchlistRoutes } from './routes/watchlist'
 import { cardRequestsRoutes } from './routes/cardRequests'
 import { stripeRoutes } from './routes/stripe'
 
-const app = Fastify({
-  logger: true,
-  bodyLimit: 10485760, // 10MB
-})
+const app = Fastify({ logger: true })
 
 async function main() {
-  // ── Plugins ──────────────────────────────
-  await app.register(cors, {
-    origin: true,
-  })
+  await app.register(cors, { origin: true })
 
   await app.register(jwt, {
     secret: process.env.JWT_SECRET ?? 'dev-secret-change-in-production',
@@ -33,24 +27,16 @@ async function main() {
     timeWindow: '1 minute',
   })
 
-  // rawBody per webhook Stripe
-  app.addContentTypeParser(
-    'application/json',
-    { parseAs: 'buffer' },
-    (req, body, done) => {
-      try {
-        ;(req as any).rawBody = body
-        done(null, JSON.parse(body.toString()))
-      } catch (err: any) {
-        done(err, undefined)
-      }
+  // rawBody solo per il webhook Stripe
+  app.addHook('preHandler', async (req: any, _reply) => {
+    const isWebhook = req.url === '/api/v1/stripe/webhook'
+    if (isWebhook) {
+      req.rawBody = await req.body
     }
-  )
+  })
 
-  // ── Health check ─────────────────────────
   app.get('/health', async () => ({ status: 'ok', version: '0.1.0' }))
 
-  // ── Routes ───────────────────────────────
   await app.register(cardsRoutes,        { prefix: '/api/v1/cards' })
   await app.register(collectionRoutes,   { prefix: '/api/v1/collection' })
   await app.register(pricesRoutes,       { prefix: '/api/v1/prices' })
@@ -60,7 +46,6 @@ async function main() {
   await app.register(cardRequestsRoutes, { prefix: '/api/v1/card-requests' })
   await app.register(stripeRoutes,       { prefix: '/api/v1/stripe' })
 
-  // ── Start ────────────────────────────────
   try {
     await app.listen({ port: Number(process.env.PORT ?? 3000), host: '0.0.0.0' })
     console.log('🚀 TacCards Vault backend avviato')

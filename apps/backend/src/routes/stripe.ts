@@ -20,8 +20,8 @@ export async function stripeRoutes(app: FastifyInstance) {
       mode: 'subscription',
       payment_method_types: ['card'],
       line_items: [{ price: PRICE_ID, quantity: 1 }],
-      success_url: `${process.env.FRONTEND_URL}/success?session_id={CHECKOUT_SESSION_ID}`,
-      cancel_url: `${process.env.FRONTEND_URL}/cancel`,
+      success_url: `${process.env.FRONTEND_URL}?premium=success`,
+      cancel_url: `${process.env.FRONTEND_URL}?premium=cancel`,
       customer_email: user.email,
       metadata: { userId: user.id },
     })
@@ -30,18 +30,17 @@ export async function stripeRoutes(app: FastifyInstance) {
   })
 
   // POST /api/v1/stripe/webhook — eventi Stripe
-  app.post('/webhook', {
-    config: { rawBody: true },
-  }, async (req, reply) => {
+  app.post('/webhook', async (req, reply) => {
     const sig = req.headers['stripe-signature'] as string
+    const rawBody = (req as any).rawBody
+
+    if (!rawBody) {
+      return reply.status(400).send({ error: 'Missing raw body' })
+    }
 
     let event: Stripe.Event
     try {
-      event = stripe.webhooks.constructEvent(
-        (req as any).rawBody,
-        sig,
-        WEBHOOK_SECRET
-      )
+      event = stripe.webhooks.constructEvent(rawBody, sig, WEBHOOK_SECRET)
     } catch (err: any) {
       return reply.status(400).send({ error: `Webhook error: ${err.message}` })
     }
