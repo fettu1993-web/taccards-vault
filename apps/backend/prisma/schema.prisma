@@ -3,8 +3,8 @@ generator client {
 }
 
 datasource db {
-  provider = "postgresql"
-  url      = env("DATABASE_URL")
+  provider  = "postgresql"
+  url       = env("DATABASE_URL")
   directUrl = env("DIRECT_URL")
 }
 
@@ -12,18 +12,21 @@ datasource db {
 // UTENTI
 // ─────────────────────────────────────────
 model User {
-  id               String    @id @default(uuid())
-  email            String    @unique
-  displayName      String?   @map("display_name")
-  avatarUrl        String?   @map("avatar_url")
-  subscriptionTier String    @default("free") @map("subscription_tier") // free | pro
-  createdAt        DateTime  @default(now()) @map("created_at")
-  updatedAt        DateTime  @updatedAt @map("updated_at")
+  id                 String    @id @default(uuid())
+  email              String    @unique
+  displayName        String?   @map("display_name")
+  avatarUrl          String?   @map("avatar_url")
+  subscriptionTier   String    @default("free") @map("subscription_tier")
+  isPremium          Boolean   @default(false) @map("is_premium")
+  stripeCustomerId   String?   @map("stripe_customer_id")
+  stripeSubId        String?   @map("stripe_sub_id")
+  createdAt          DateTime  @default(now()) @map("created_at")
+  updatedAt          DateTime  @updatedAt @map("updated_at")
 
-  userCards        UserCard[]
-  sealedProducts   SealedProduct[]
-  scanLogs         ScanLog[]
-  watchlist        Watchlist[]
+  userCards          UserCard[]
+  sealedProducts     SealedProduct[]
+  scanLogs           ScanLog[]
+  watchlist          Watchlist[]
 
   @@map("users")
 }
@@ -36,22 +39,19 @@ model Card {
   name         String
   playerName   String?  @map("player_name")
   team         String?
-  // campo agnostico: soccer | basketball | football | f1 | baseball | pokemon | onepiece | mtg
   sport        String
-  category     String   // es. "Panini Prizm", "Topps Chrome", "Upper Deck"
+  category     String
   manufacturer String?
   setName      String   @map("set_name")
   year         Int
   cardNumber   String?  @map("card_number")
-  parallel     String?  // Silver, Gold, Blue /99, ecc.
+  parallel     String?
   isRookie     Boolean  @default(false) @map("is_rookie")
   isAutograph  Boolean  @default(false) @map("is_autograph")
   isNumbered   Boolean  @default(false) @map("is_numbered")
   printRun     Int?     @map("print_run")
   imageUrl     String?  @map("image_url")
-  // ID esterno per collegare Card Hedge API / CardSight AI
   externalId   String?  @map("external_id")
-  // fonte del dato: "cardsight" | "cardhedge" | "manual" | "community"
   dataSource   String   @default("manual") @map("data_source")
   createdAt    DateTime @default(now()) @map("created_at")
   updatedAt    DateTime @updatedAt @map("updated_at")
@@ -71,22 +71,20 @@ model Card {
 // COLLEZIONE UTENTE
 // ─────────────────────────────────────────
 model UserCard {
-  id               String   @id @default(uuid())
-  userId           String   @map("user_id")
-  cardId           String   @map("card_id")
-  // raw | psa | bgs | sgc | cgc | tag
-  condition        String   @default("raw")
-  gradeCompany     String?  @map("grade_company")
-  gradeValue       String?  @map("grade_value")   // "9", "9.5", "10"
-  certNumber       String?  @map("cert_number")   // numero slab PSA/BGS
-  purchasePrice    Decimal? @map("purchase_price") @db.Decimal(10, 2)
+  id               String    @id @default(uuid())
+  userId           String    @map("user_id")
+  cardId           String    @map("card_id")
+  condition        String    @default("raw")
+  gradeCompany     String?   @map("grade_company")
+  gradeValue       String?   @map("grade_value")
+  certNumber       String?   @map("cert_number")
+  purchasePrice    Decimal?  @map("purchase_price") @db.Decimal(10, 2)
   purchaseDate     DateTime? @map("purchase_date")
-  purchasePlatform String?  @map("purchase_platform") // ebay | cardmarket | subito | privato
-  // in_collection | for_sale | sold | wishlist
-  status           String   @default("in_collection")
+  purchasePlatform String?   @map("purchase_platform")
+  status           String    @default("in_collection")
   notes            String?
-  createdAt        DateTime @default(now()) @map("created_at")
-  updatedAt        DateTime @updatedAt @map("updated_at")
+  createdAt        DateTime  @default(now()) @map("created_at")
+  updatedAt        DateTime  @updatedAt @map("updated_at")
 
   user User @relation(fields: [userId], references: [id], onDelete: Cascade)
   card Card @relation(fields: [cardId], references: [id])
@@ -100,16 +98,14 @@ model UserCard {
 // STORICO PREZZI (motore grafici)
 // ─────────────────────────────────────────
 model PriceHistory {
-  id          String   @id @default(uuid())
-  cardId      String   @map("card_id")
-  // "raw" | "PSA 9" | "PSA 10" | "BGS 9.5" ecc.
-  gradeLabel  String   @map("grade_label")
-  price       Decimal  @db.Decimal(10, 2)
-  // cardhedge | ebay | cardmarket | subito | manual
-  source      String
-  platform    String?
-  saleDate    DateTime @map("sale_date")
-  fetchedAt   DateTime @default(now()) @map("fetched_at")
+  id         String   @id @default(uuid())
+  cardId     String   @map("card_id")
+  gradeLabel String   @map("grade_label")
+  price      Decimal  @db.Decimal(10, 2)
+  source     String
+  platform   String?
+  saleDate   DateTime @map("sale_date")
+  fetchedAt  DateTime @default(now()) @map("fetched_at")
 
   card Card @relation(fields: [cardId], references: [id])
 
@@ -125,9 +121,7 @@ model SealedProduct {
   id               String   @id @default(uuid())
   userId           String   @map("user_id")
   name             String
-  // soccer | basketball | football | f1 | pokemon ecc.
   category         String
-  // box | case | pack | blaster | hobby | breakaway
   productType      String   @map("product_type")
   manufacturer     String?
   year             Int
@@ -137,14 +131,13 @@ model SealedProduct {
   purchaseDate     DateTime @map("purchase_date")
   purchasePlatform String?  @map("purchase_platform")
   currentValue     Decimal? @map("current_value") @db.Decimal(10, 2)
-  // sealed | opened | sold
   status           String   @default("sealed")
   notes            String?
   imageUrl         String?  @map("image_url")
   createdAt        DateTime @default(now()) @map("created_at")
   updatedAt        DateTime @updatedAt @map("updated_at")
 
-  user         User                  @relation(fields: [userId], references: [id], onDelete: Cascade)
+  user         User                 @relation(fields: [userId], references: [id], onDelete: Cascade)
   priceHistory SealedPriceHistory[]
 
   @@index([userId])
@@ -170,14 +163,13 @@ model SealedPriceHistory {
 }
 
 // ─────────────────────────────────────────
-// LOG SCANSIONI (miglioramento AI nel tempo)
+// LOG SCANSIONI
 // ─────────────────────────────────────────
 model ScanLog {
   id              String   @id @default(uuid())
   userId          String   @map("user_id")
   matchedCardId   String?  @map("matched_card_id")
   imageUrl        String?  @map("image_url")
-  // cardsight | manual_ocr
   apiProvider     String?  @map("api_provider")
   confidenceScore Decimal? @map("confidence_score") @db.Decimal(5, 4)
   wasConfirmed    Boolean  @default(false) @map("was_confirmed")
@@ -194,15 +186,15 @@ model ScanLog {
 // WATCHLIST / PRICE ALERTS
 // ─────────────────────────────────────────
 model Watchlist {
-  id           String   @id @default(uuid())
-  userId       String   @map("user_id")
-  cardId       String   @map("card_id")
-  targetPrice  Decimal? @map("target_price") @db.Decimal(10, 2)
-  notifyAbove  Boolean  @default(false) @map("notify_above")
-  notifyBelow  Boolean  @default(true)  @map("notify_below")
-  gradeLabel   String?  @map("grade_label") // PSA 10, raw, ecc.
-  isActive     Boolean  @default(true) @map("is_active")
-  createdAt    DateTime @default(now()) @map("created_at")
+  id          String   @id @default(uuid())
+  userId      String   @map("user_id")
+  cardId      String   @map("card_id")
+  targetPrice Decimal? @map("target_price") @db.Decimal(10, 2)
+  notifyAbove Boolean  @default(false) @map("notify_above")
+  notifyBelow Boolean  @default(true) @map("notify_below")
+  gradeLabel  String?  @map("grade_label")
+  isActive    Boolean  @default(true) @map("is_active")
+  createdAt   DateTime @default(now()) @map("created_at")
 
   user User @relation(fields: [userId], references: [id], onDelete: Cascade)
   card Card @relation(fields: [cardId], references: [id])

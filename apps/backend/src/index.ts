@@ -11,8 +11,12 @@ import { sealedRoutes } from './routes/sealed'
 import { scanRoutes } from './routes/scan'
 import { watchlistRoutes } from './routes/watchlist'
 import { cardRequestsRoutes } from './routes/cardRequests'
+import { stripeRoutes } from './routes/stripe'
 
-const app = Fastify({ logger: true })
+const app = Fastify({
+  logger: true,
+  bodyLimit: 10485760, // 10MB
+})
 
 async function main() {
   // ── Plugins ──────────────────────────────
@@ -29,6 +33,20 @@ async function main() {
     timeWindow: '1 minute',
   })
 
+  // rawBody per webhook Stripe
+  app.addContentTypeParser(
+    'application/json',
+    { parseAs: 'buffer' },
+    (req, body, done) => {
+      try {
+        ;(req as any).rawBody = body
+        done(null, JSON.parse(body.toString()))
+      } catch (err: any) {
+        done(err, undefined)
+      }
+    }
+  )
+
   // ── Health check ─────────────────────────
   app.get('/health', async () => ({ status: 'ok', version: '0.1.0' }))
 
@@ -40,6 +58,7 @@ async function main() {
   await app.register(scanRoutes,         { prefix: '/api/v1/scan' })
   await app.register(watchlistRoutes,    { prefix: '/api/v1/watchlist' })
   await app.register(cardRequestsRoutes, { prefix: '/api/v1/card-requests' })
+  await app.register(stripeRoutes,       { prefix: '/api/v1/stripe' })
 
   // ── Start ────────────────────────────────
   try {
