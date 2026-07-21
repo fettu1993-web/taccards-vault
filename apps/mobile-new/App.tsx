@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react'
-import { View, Text, ActivityIndicator, TouchableOpacity } from 'react-native'
+import { View, Text, ActivityIndicator } from 'react-native'
 import AsyncStorage from '@react-native-async-storage/async-storage'
 import { supabase } from './src/lib/supabase'
 import { apiFetch } from './src/lib/api'
@@ -11,7 +11,6 @@ import { OnboardingScreen } from './src/screens/OnboardingScreen'
 import { CollezioneScreen } from './src/screens/CollezioneScreen'
 import { CercaScreen } from './src/screens/CercaScreen'
 import { ScannerScreen } from './src/screens/ScannerScreen'
-import { SealedProductsScreen } from './src/screens/SealedProductsScreen'
 import { ProfiloScreen } from './src/screens/ProfiloScreen'
 import { CartaDetailScreen } from './src/screens/CartaDetailScreen'
 import { AdminScreen } from './src/screens/AdminScreen'
@@ -138,7 +137,7 @@ export default function App() {
   if (cartaDettaglio) {
     return (
       <View style={{ flex: 1, backgroundColor: '#F1EFE8' }}>
-      <CartaDetailScreen
+        <CartaDetailScreen
           carta={cartaDettaglio}
           onBack={() => setCartaDettaglio(null)}
           onToast={showToast}
@@ -170,7 +169,6 @@ export default function App() {
         />
       )}
       {activeTab === 'scanner' && <ScannerScreen />}
-      {activeTab === 'sealed' && <SealedProductsScreen />}
       {activeTab === 'watchlist' && (
         <WatchlistScreen onToast={showToast} />
       )}

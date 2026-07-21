@@ -4,7 +4,6 @@ const TABS = [
   { id: 'collezione', label: 'Collezione', icon: '🏠' },
   { id: 'cerca', label: 'Cerca', icon: '🔍' },
   { id: 'scanner', label: 'Scanner', icon: '📷' },
-  { id: 'sealed', label: 'Sealed', icon: '📦' },
   { id: 'watchlist', label: 'Watchlist', icon: '👁️' },
   { id: 'profilo', label: 'Profilo', icon: '👤' },
 ]
