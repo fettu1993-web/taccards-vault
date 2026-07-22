@@ -46,16 +46,15 @@ export async function stripeRoutes(app: FastifyInstance) {
     }
 
     if (event.type === 'checkout.session.completed') {
-      const session = event.data.object as Stripe.Checkout.Session
-      const userId = session.metadata?.userId
-      if (userId) {
-        await prisma.user.update({
-          where: { id: userId },
-          data: { isPremium: true },
-        })
-      }
-    }
-
+  const session = event.data.object as Stripe.Checkout.Session
+  const email = session.customer_email
+  if (email) {
+    await prisma.user.updateMany({
+      where: { email },
+      data: { isPremium: true },
+    })
+  }
+}
     if (event.type === 'customer.subscription.deleted') {
       const subscription = event.data.object as Stripe.Subscription
       const customer = await stripe.customers.retrieve(subscription.customer as string)
