@@ -7,10 +7,12 @@ export async function apiFetch(path: string, options?: RequestInit) {
   const token = session?.access_token
   if (!token) throw new Error('Non autenticato')
 
+  const hasBody = options?.body !== undefined
+
   const res = await fetch(`${API_URL}${path}`, {
     ...options,
     headers: {
-      'Content-Type': 'application/json',
+      ...(hasBody ? { 'Content-Type': 'application/json' } : {}),
       'Authorization': `Bearer ${token}`,
       ...options?.headers,
     },
