@@ -7,11 +7,11 @@ import { Carta } from '../types'
 
 const { width } = Dimensions.get('window')
 const IS_WEB = Platform.OS === 'web'
-const IS_MOBILE_WEB = IS_WEB && width < 768
+const IS_SMALL_SCREEN = width < 768
 
-const PAGE_WIDTH = IS_MOBILE_WEB
+const PAGE_WIDTH = IS_SMALL_SCREEN
   ? (width - 16) / 2
-  : (Math.min(width * 0.48, 400))
+  : Math.min(width * 0.48, 400)
 
 const SLOT_WIDTH_MOBILE = (PAGE_WIDTH - 8) / 3
 const GAP = 3
@@ -245,13 +245,13 @@ const styles = StyleSheet.create({
   },
 
   slot: {
-    width: IS_WEB ? '31%' : SLOT_WIDTH_MOBILE,
-    height: IS_WEB ? undefined : SLOT_WIDTH_MOBILE * 1.4,
-    aspectRatio: IS_WEB ? 0.71 : undefined,
-    borderRadius: 4,
-    overflow: 'hidden',
-    margin: IS_WEB ? '1%' : 0,
-  },
+  width: IS_SMALL_SCREEN ? SLOT_WIDTH_MOBILE : '31%',
+  height: IS_SMALL_SCREEN ? SLOT_WIDTH_MOBILE * 1.4 : undefined,
+  aspectRatio: IS_SMALL_SCREEN ? undefined : 0.71,
+  borderRadius: 4,
+  overflow: 'hidden',
+  margin: IS_SMALL_SCREEN ? 0 : '1%',
+},
 
   sleeve: {
     flex: 1,
