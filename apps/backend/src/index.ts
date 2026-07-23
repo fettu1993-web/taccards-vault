@@ -13,6 +13,7 @@ import { watchlistRoutes } from './routes/watchlist'
 import { cardRequestsRoutes } from './routes/cardRequests'
 import { stripeRoutes } from './routes/stripe'
 import { ebayRoutes } from './routes/ebay'
+import { syncRoutes } from './routes/sync'
 
 const app = Fastify({ logger: true })
 
@@ -28,7 +29,6 @@ async function main() {
     timeWindow: '1 minute',
   })
 
-  // rawBody solo per il webhook Stripe
   app.addHook('preHandler', async (req: any, _reply) => {
     const isWebhook = req.url === '/api/v1/stripe/webhook'
     if (isWebhook) {
@@ -47,6 +47,7 @@ async function main() {
   await app.register(cardRequestsRoutes, { prefix: '/api/v1/card-requests' })
   await app.register(stripeRoutes,       { prefix: '/api/v1/stripe' })
   await app.register(ebayRoutes,         { prefix: '/api/v1/ebay' })
+  await app.register(syncRoutes,         { prefix: '/api/v1/sync' })
 
   try {
     await app.listen({ port: Number(process.env.PORT ?? 3000), host: '0.0.0.0' })
