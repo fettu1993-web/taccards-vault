@@ -12,6 +12,7 @@ import { scanRoutes } from './routes/scan'
 import { watchlistRoutes } from './routes/watchlist'
 import { cardRequestsRoutes } from './routes/cardRequests'
 import { stripeRoutes } from './routes/stripe'
+import { ebayRoutes } from './routes/ebay'
 
 const app = Fastify({ logger: true })
 
@@ -45,6 +46,7 @@ async function main() {
   await app.register(watchlistRoutes,    { prefix: '/api/v1/watchlist' })
   await app.register(cardRequestsRoutes, { prefix: '/api/v1/card-requests' })
   await app.register(stripeRoutes,       { prefix: '/api/v1/stripe' })
+  await app.register(ebayRoutes,         { prefix: '/api/v1/ebay' })
 
   try {
     await app.listen({ port: Number(process.env.PORT ?? 3000), host: '0.0.0.0' })
