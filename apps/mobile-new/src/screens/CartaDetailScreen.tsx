@@ -3,6 +3,7 @@ import { View, Text, ScrollView, TouchableOpacity, StyleSheet, Image, Modal, Tex
 import { Carta } from '../types'
 import { PrezzoChart } from '../components/PrezzoChart'
 import { apiFetch } from '../lib/api'
+import { EbayPrices } from '../components/EbayPrices'
 
 export function CartaDetailScreen({ carta, onBack, onRimuovi, onToast }: {
   carta: Carta
@@ -92,6 +93,13 @@ export function CartaDetailScreen({ carta, onBack, onRimuovi, onToast }: {
           <PrezzoChart points={carta.priceHistory} gradeLabel={gradeLabel} />
         </View>
       )}
+
+      <EbayPrices
+        cardId={carta.cardId}
+        playerName={carta.player}
+        setName={carta.set}
+        parallel={carta.parallel}
+      />
 
       {carta.buyPrice > 0 && (
         <View style={styles.section}>
