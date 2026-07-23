@@ -205,7 +205,7 @@ export function CercaScreen({ collezione, onAggiungi, onToast }: {
       </View>
 
       <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.filtriScroll}>
-        {['Tutti', 'Calcio', 'Basket', 'F1', 'Tennis'].map((sport) => (
+        {['Tutti', 'Calcio', 'Basket', 'F1', 'Tennis', 'Football'].map((sport) => (
           <TouchableOpacity key={sport}
             style={[styles.filtroBtn, filtroSport === sport && styles.filtroBtnAttivo]}
             onPress={() => setFiltroSport(sport)}>
