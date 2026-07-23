@@ -15,6 +15,7 @@ import { ProfiloScreen } from './src/screens/ProfiloScreen'
 import { CartaDetailScreen } from './src/screens/CartaDetailScreen'
 import { AdminScreen } from './src/screens/AdminScreen'
 import { WatchlistScreen } from './src/screens/WatchlistScreen'
+import { BinderScreen } from './src/screens/BinderScreen'
 
 const ADMIN_EMAIL = 'fettu1993@gmail.com'
 
@@ -168,6 +169,9 @@ export default function App() {
           onToast={showToast}
         />
       )}
+      {activeTab === 'binder' && (
+        <BinderScreen carte={collezione} />
+      )}
       {activeTab === 'scanner' && <ScannerScreen />}
       {activeTab === 'watchlist' && (
         <WatchlistScreen onToast={showToast} />
@@ -178,6 +182,7 @@ export default function App() {
           onLogout={handleLogout}
           carte={collezione}
           onAdmin={isAdmin ? () => setShowAdmin(true) : undefined}
+          onToast={showToast}
         />
       )}
       <TabBar active={activeTab} onPress={setActiveTab} />
