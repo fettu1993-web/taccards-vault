@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react'
-import { View, Text, StyleSheet, TouchableOpacity, ActivityIndicator } from 'react-native'
+import { View, Text, StyleSheet, TouchableOpacity, ActivityIndicator, Image, Linking } from 'react-native'
 import { apiFetch } from '../lib/api'
 
 const GRADES = [
@@ -15,6 +15,8 @@ interface Sale {
   price: number
   date: string
   title: string
+  image?: string | null
+  itemUrl?: string | null
 }
 
 interface EbayPrice {
@@ -30,6 +32,12 @@ interface Props {
   playerName: string
   setName: string
   parallel?: string | null
+}
+
+function cleanImageUrl(url: string | null | undefined): string | null {
+  if (!url) return null
+  // Rimuove parametri timestamp e resize da URL eBay
+  return url.split('?')[0].replace(/\/s-l\d+\./, '/s-l500.')
 }
 
 export function EbayPrices({ cardId, playerName, setName, parallel }: Props) {
@@ -109,33 +117,54 @@ export function EbayPrices({ cardId, playerName, setName, parallel }: Props) {
             <View>
               <Text style={styles.avgLabel}>Valore medio ({selectedGrade})</Text>
               <Text style={styles.avgPrice}>
-                {current.price ? `€${current.price.toLocaleString('it-IT', { minimumFractionDigits: 2 })}` : 'Nessun dato'}
+                {current.price
+                  ? `$${current.price.toLocaleString('en-US', { minimumFractionDigits: 2 })}`
+                  : 'Nessun dato'}
               </Text>
             </View>
-            {current.price && (
+            {current.price && current.sales.length > 0 && (
               <View style={styles.salesCount}>
-                <Text style={styles.salesCountText}>{current.sales.length} vendite</Text>
+                <Text style={styles.salesCountText}>{current.sales.length} annunci</Text>
               </View>
             )}
           </View>
 
           {current.sales.length > 0 && (
             <View style={styles.salesList}>
-              <Text style={styles.salesTitle}>Vendite recenti</Text>
-              {current.sales.map((sale, idx) => (
-                <View key={idx} style={styles.saleRow}>
-                  <Text style={styles.saleTitle} numberOfLines={1}>{sale.title}</Text>
-                  <View style={styles.saleRight}>
-                    <Text style={styles.salePrice}>€{sale.price.toFixed(2)}</Text>
-                    <Text style={styles.saleDate}>{new Date(sale.date).toLocaleDateString('it-IT')}</Text>
-                  </View>
-                </View>
-              ))}
+              <Text style={styles.salesTitle}>ANNUNCI RECENTI</Text>
+              {current.sales.map((sale, idx) => {
+                const cleanImg = cleanImageUrl(sale.image)
+                return (
+                  <TouchableOpacity
+                    key={idx}
+                    style={styles.saleRow}
+                    onPress={() => sale.itemUrl && Linking.openURL(sale.itemUrl)}
+                    activeOpacity={0.7}
+                  >
+                    {cleanImg ? (
+                      <Image
+                        source={{ uri: cleanImg }}
+                        style={styles.saleImage}
+                        resizeMode="contain"
+                      />
+                    ) : (
+                      <View style={styles.saleImagePlaceholder}>
+                        <Text style={styles.saleImagePlaceholderText}>🃏</Text>
+                      </View>
+                    )}
+                    <View style={styles.saleInfo}>
+                      <Text style={styles.saleTitle2} numberOfLines={2}>{sale.title}</Text>
+                      <Text style={styles.salePrice}>${sale.price.toFixed(2)}</Text>
+                    </View>
+                    <Text style={styles.saleArrow}>→</Text>
+                  </TouchableOpacity>
+                )
+              })}
             </View>
           )}
 
           {current.sales.length === 0 && (
-            <Text style={styles.noData}>Nessuna vendita recente trovata su eBay</Text>
+            <Text style={styles.noData}>Nessun annuncio trovato su eBay</Text>
           )}
         </>
       )}
@@ -162,10 +191,13 @@ const styles = StyleSheet.create({
   salesCountText: { fontSize: 12, color: '#534AB7', fontWeight: '500' },
   salesList: { borderTopWidth: 0.5, borderTopColor: '#F1EFE8', paddingTop: 12 },
   salesTitle: { fontSize: 11, color: '#888780', fontWeight: '600', marginBottom: 10, letterSpacing: 0.5 },
-  saleRow: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', paddingVertical: 10, borderBottomWidth: 0.5, borderBottomColor: '#F1EFE8' },
-  saleTitle: { fontSize: 12, color: '#2C2C2A', flex: 1, marginRight: 8 },
-  saleRight: { alignItems: 'flex-end' },
-  salePrice: { fontSize: 14, fontWeight: '600', color: '#2C2C2A' },
-  saleDate: { fontSize: 11, color: '#888780', marginTop: 2 },
+  saleRow: { flexDirection: 'row', alignItems: 'center', paddingVertical: 10, borderBottomWidth: 0.5, borderBottomColor: '#F1EFE8', gap: 12 },
+  saleImage: { width: 56, height: 78, borderRadius: 4, backgroundColor: '#F1EFE8' },
+  saleImagePlaceholder: { width: 56, height: 78, borderRadius: 4, backgroundColor: '#F1EFE8', alignItems: 'center', justifyContent: 'center' },
+  saleImagePlaceholderText: { fontSize: 24 },
+  saleInfo: { flex: 1 },
+  saleTitle2: { fontSize: 12, color: '#2C2C2A', lineHeight: 16, marginBottom: 4 },
+  salePrice: { fontSize: 15, fontWeight: '700', color: '#534AB7' },
+  saleArrow: { fontSize: 16, color: '#888780' },
   noData: { fontSize: 13, color: '#888780', textAlign: 'center', paddingVertical: 16 },
 })

@@ -22,14 +22,14 @@ async function getEbayToken(): Promise<string> {
   return data.access_token
 }
 
-async function searchEbaySales(query: string, token: string): Promise<{ price: number; date: string; title: string }[]> {
+async function searchEbaySales(query: string, token: string): Promise<{ price: number; date: string; title: string; image: string | null; itemUrl: string | null }[]> {
   const encoded = encodeURIComponent(query)
   const res = await fetch(
     `https://api.ebay.com/buy/browse/v1/item_summary/search?q=${encoded}&filter=conditionIds:{2750|3000}&sort=newlyListed&limit=10&category_ids=212`,
     {
       headers: {
         'Authorization': `Bearer ${token}`,
-        'X-EBAY-C-MARKETPLACE-ID': 'EBAY_IT',
+        'X-EBAY-C-MARKETPLACE-ID': 'EBAY_US',
         'Content-Type': 'application/json',
       },
     }
@@ -42,6 +42,8 @@ async function searchEbaySales(query: string, token: string): Promise<{ price: n
       price: parseFloat(i.price.value),
       date: i.itemCreationDate ?? new Date().toISOString(),
       title: i.title ?? '',
+      image: i.image?.imageUrl ?? null,
+      itemUrl: i.itemWebUrl ?? null,
     }))
 }
 
