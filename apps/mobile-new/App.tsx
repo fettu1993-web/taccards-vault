@@ -16,7 +16,6 @@ import { CartaDetailScreen } from './src/screens/CartaDetailScreen'
 import { AdminScreen } from './src/screens/AdminScreen'
 import { WatchlistScreen } from './src/screens/WatchlistScreen'
 
-
 const ADMIN_EMAIL = 'fettu1993@gmail.com'
 
 export default function App() {
@@ -168,7 +167,7 @@ export default function App() {
           onAggiungi={handleAggiungi}
           onToast={showToast}
         />
-      
+      )}
       {activeTab === 'scanner' && <ScannerScreen />}
       {activeTab === 'watchlist' && (
         <WatchlistScreen onToast={showToast} />
