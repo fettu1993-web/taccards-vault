@@ -5,7 +5,7 @@ import { authenticate } from '../middleware/auth'
 import { Prisma } from '@prisma/client'
 
 const addCardSchema = z.object({
-  cardId: z.string().uuid(),
+  cardId: z.string().min(1),,
   condition: z.enum(['raw', 'graded', 'psa', 'bgs', 'sgc', 'cgc', 'tag', 'graad']).default('raw'),
   gradeCompany: z.string().optional(),
   gradeValue: z.string().optional(),
