@@ -52,7 +52,6 @@ async function fetchEbayData(
     ? Math.round((prices.reduce((a: number, b: number) => a + b, 0) / prices.length) * 100) / 100
     : null
 
-  // Prendi immagine dal primo risultato, pulita senza parametri
   const rawImage = items[0]?.image?.imageUrl ?? null
   const imageUrl = rawImage ? rawImage.split('?')[0].replace(/\/s-l\d+\./, '/s-l500.') : null
 
@@ -61,7 +60,6 @@ async function fetchEbayData(
 
 export async function syncRoutes(app: FastifyInstance) {
 
-  // POST /api/v1/sync/prices — job notturno
   app.post('/prices', async (req, reply) => {
     const secret = (req.headers['x-sync-secret'] as string) ?? ''
     if (secret !== SYNC_SECRET) {
@@ -97,17 +95,24 @@ export async function syncRoutes(app: FastifyInstance) {
 
           const isUuid = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(card.id)
 
-          // Salva prezzo in price_history solo per UUID validi
-          if (price && isUuid) {
-            await prisma.priceHistory.create({
-              data: {
-                cardId: card.id,
-                price,
-                gradeLabel: 'raw',
-                saleDate: new Date(),
-                source: 'ebay',
-              },
-            })
+          if (price) {
+            // Salva current_price per tutte le carte
+            await (prisma as any).$executeRaw`
+              UPDATE cards SET current_price = ${price} WHERE id = ${card.id}
+            `
+
+            // Salva anche in price_history per carte UUID (storico)
+            if (isUuid) {
+              await prisma.priceHistory.create({
+                data: {
+                  cardId: card.id,
+                  price,
+                  gradeLabel: 'raw',
+                  saleDate: new Date(),
+                  source: 'ebay',
+                },
+              })
+            }
             updated++
           }
 
@@ -144,7 +149,6 @@ export async function syncRoutes(app: FastifyInstance) {
     })
   })
 
-  // GET /api/v1/sync/status
   app.get('/status', async (_req, reply) => {
     const total = await prisma.card.count()
     const updated = await (prisma as any).$queryRaw`
@@ -153,16 +157,15 @@ export async function syncRoutes(app: FastifyInstance) {
     const withImage = await (prisma as any).$queryRaw`
       SELECT COUNT(*) as count FROM cards WHERE image_url IS NOT NULL
     ` as any[]
-    const withPrice = await prisma.priceHistory.groupBy({
-      by: ['cardId'],
-      _count: true,
-    })
+    const withPrice = await (prisma as any).$queryRaw`
+      SELECT COUNT(*) as count FROM cards WHERE current_price IS NOT NULL
+    ` as any[]
 
     return reply.send({
       totalCards: total,
       cardsWithPriceUpdate: Number(updated[0].count),
-      cardsWithPrice: withPrice.length,
-      cardsWithoutPrice: total - withPrice.length,
+      cardsWithPrice: Number(withPrice[0].count),
+      cardsWithoutPrice: total - Number(withPrice[0].count),
       cardsWithImage: Number(withImage[0].count),
       cardsWithoutImage: total - Number(withImage[0].count),
     })
