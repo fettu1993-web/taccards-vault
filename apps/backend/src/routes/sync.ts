@@ -31,7 +31,7 @@ async function fetchEbayData(
   const encoded = encodeURIComponent(query)
 
   const res = await fetch(
-    `https://api.ebay.com/buy/browse/v1/item_summary/search?q=${encoded}&filter=conditionIds:{2750|3000}&sort=newlyListed&limit=5&category_ids=212`,
+    `https://api.ebay.com/buy/browse/v1/item_summary/search?q=${encoded}&filter=conditionIds:{2750|3000}&sort=newlyListed&limit=10&category_ids=212`,
     {
       headers: {
         'Authorization': `Bearer ${token}`,
@@ -52,7 +52,13 @@ async function fetchEbayData(
     ? Math.round((prices.reduce((a: number, b: number) => a + b, 0) / prices.length) * 100) / 100
     : null
 
-  const rawImage = items[0]?.image?.imageUrl ?? null
+  // Prendi immagine solo da annunci raw (escludi PSA, BGS, SGC, CGC)
+  const gradingKeywords = ['psa', 'bgs', 'sgc', 'cgc', 'graded', 'slab']
+  const rawItem = items.find((i: any) => {
+    const title = (i.title ?? '').toLowerCase()
+    return !gradingKeywords.some(k => title.includes(k))
+  })
+  const rawImage = rawItem?.image?.imageUrl ?? items[0]?.image?.imageUrl ?? null
   const imageUrl = rawImage ? rawImage.split('?')[0].replace(/\/s-l\d+\./, '/s-l500.') : null
 
   return { price, imageUrl }
