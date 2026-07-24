@@ -4,7 +4,7 @@ import { prisma } from '../lib/prisma'
 const EBAY_CLIENT_ID = process.env.EBAY_CLIENT_ID!
 const EBAY_CLIENT_SECRET = process.env.EBAY_CLIENT_SECRET!
 const SYNC_SECRET = process.env.SYNC_SECRET ?? 'sync-secret-dev'
-const BATCH_SIZE = 500
+const BATCH_SIZE = 100
 
 async function getEbayToken(): Promise<string> {
   const credentials = Buffer.from(`${EBAY_CLIENT_ID}:${EBAY_CLIENT_SECRET}`).toString('base64')
